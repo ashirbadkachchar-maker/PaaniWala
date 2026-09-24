@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body { background: #fff7ed; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+.gold-frame { border: 3px solid #f59e0b; }
+.gold-btn { background: linear-gradient(135deg, #fbbf24, #d97706); }
+.gold-card { border: 2px solid #f59e0b; }
+.chip { border: 2px solid #fcd34d; border-radius: 9999px; padding: 0.4rem 0.9rem; font-size: 0.85rem; font-weight: 600; }
+.chip-on { background: linear-gradient(135deg, #fbbf24, #d97706); color: white; border-color: #d97706; }
+.chip-off { background: white; color: #1e3a8a; }
+.input-gold { border: 2px solid #f59e0b; border-radius: 0.9rem; padding: 0.7rem 1rem; width: 100%; outline: none; background: white; }
+.input-gold:focus { border-color: #d97706; }
