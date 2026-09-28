@@ -44,6 +44,28 @@ export function areaMatches(buyerAddress: string | null | undefined, sellerArea:
   return area.length > 0 && (" " + normalize(buyerAddress) + " ").includes(" " + area + " ");
 }
 
+export type Gps = { lat: number; lng: number };
+
+// GPS is stored inside the address text so no schema change is needed.
+const GPS_MARKER = " | GPS: ";
+
+export function withGps(text: string, gps: Gps | null) {
+  return gps ? `${text}${GPS_MARKER}${gps.lat.toFixed(6)},${gps.lng.toFixed(6)}` : text;
+}
+
+export function parseAddress(address: string | null | undefined): { text: string; gps: Gps | null } {
+  if (!address) return { text: "", gps: null };
+  const i = address.lastIndexOf(GPS_MARKER);
+  if (i === -1) return { text: address, gps: null };
+  const [lat, lng] = address.slice(i + GPS_MARKER.length).split(",").map(Number);
+  const gps = Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+  return { text: address.slice(0, i), gps };
+}
+
+export function mapsUrl(gps: Gps) {
+  return `https://www.google.com/maps/dir/?api=1&destination=${gps.lat},${gps.lng}`;
+}
+
 export function makeOrderId() {
   return "PW-" + Math.floor(1000 + Math.random() * 9000);
 }

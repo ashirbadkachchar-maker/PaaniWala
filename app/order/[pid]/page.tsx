@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import Link from "next/link";
-import { supabase, getMobile, makeOrderId, getBuyerProfile } from "@/lib/supabase";
+import { supabase, getMobile, makeOrderId, getBuyerProfile, parseAddress } from "@/lib/supabase";
 
 const times = ["Aaj Subah 8 Baje", "Aaj Shaam 5 Baje", "Kal Subah 8 Baje"];
 
@@ -102,7 +102,14 @@ export default function Checkout({ params }: { params: { pid: string } }) {
           </div>
         </div>
         <div className="flex items-center justify-between gap-3 text-sm">
-          <span className={address ? "" : "text-red-600"}>{address || "Delivery pata nahi jodha"}</span>
+          <span className={address ? "" : "text-red-600"}>
+            {address ? parseAddress(address).text : "Delivery pata nahi jodha"}
+            {address && (
+              <span className={"block text-xs font-semibold " + (parseAddress(address).gps ? "text-green-700" : "text-amber-600")}>
+                {parseAddress(address).gps ? "GPS location judi hai" : "GPS location nahi judi - jodne ke liye Badlo dabao"}
+              </span>
+            )}
+          </span>
           <Link href="/address" className="text-blue-600 font-semibold shrink-0">{address ? "Badlo" : "Pata Jodo"}</Link>
         </div>
         {orderError && <p role="alert" className="text-sm text-red-600">{orderError}</p>}

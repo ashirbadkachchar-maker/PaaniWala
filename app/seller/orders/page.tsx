@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import SellerNav from "@/components/SellerNav";
 import { supabase } from "@/lib/supabase";
+import OrderLocation from "@/components/OrderLocation";
 
 const STATUS = ["Raste Me Hai", "Pahunch Gaya", "Cancel"];
 
@@ -35,7 +36,7 @@ export default function SellerOrders() {
                 <p className="font-bold">Rs {o.total}</p>
               </div>
               <p className="text-gray-500">{o.mobile} - {o.delivery_slot}</p>
-              <p className="text-gray-500">{o.address}</p>
+              <OrderLocation address={o.address} mobile={o.mobile} />
               <select value={o.status} onChange={(e) => updateStatus(o.id, e.target.value)} className="input-gold text-sm font-bold">
                 {STATUS.map((s) => <option key={s}>{s}</option>)}
               </select>
