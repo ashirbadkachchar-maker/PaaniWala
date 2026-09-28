@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import Link from "next/link";
-import { supabase, getMobile, makeOrderId } from "@/lib/supabase";
+import { supabase, getMobile, makeOrderId, getBuyerProfile } from "@/lib/supabase";
 
 const times = ["Aaj Subah 8 Baje", "Aaj Shaam 5 Baje", "Kal Subah 8 Baje"];
 
@@ -15,6 +15,12 @@ export default function Checkout({ params }: { params: { pid: string } }) {
   const [qty, setQty] = useState(1);
   const [time, setTime] = useState(times[1]);
   const [saving, setSaving] = useState(false);
+  const [address, setAddress] = useState<string | null>(null);
+  const [orderError, setOrderError] = useState("");
+
+  useEffect(() => {
+    getBuyerProfile().then((p) => setAddress(p?.address || null));
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -37,9 +43,14 @@ export default function Checkout({ params }: { params: { pid: string } }) {
   const commission = Math.round((price * rate) / 100);
 
   const placeOrder = async () => {
+    if (!address) {
+      setOrderError("Pehle apna delivery pata jodo.");
+      return;
+    }
+    setOrderError("");
     setSaving(true);
     const orderId = makeOrderId();
-    await supabase.from("orders").insert({
+    const { error } = await supabase.from("orders").insert({
       order_id: orderId,
       mobile: getMobile(),
       seller_id: product.seller_id,
@@ -52,11 +63,15 @@ export default function Checkout({ params }: { params: { pid: string } }) {
       commission: commission,
       seller_earning: price - commission,
       delivery_slot: time,
-      address: "B-2-304, Arihant Anchal, Jodhpur",
+      address: address,
       status: "Raste Me Hai",
     });
-    localStorage.setItem("pw_last_order", orderId);
     setSaving(false);
+    if (error) {
+      setOrderError("Order nahi hua, dobara koshish karo.");
+      return;
+    }
+    localStorage.setItem("pw_last_order", orderId);
     router.push("/success");
   };
 
@@ -86,10 +101,11 @@ export default function Checkout({ params }: { params: { pid: string } }) {
             ))}
           </div>
         </div>
-        <div className="flex items-center justify-between text-sm">
-          <span>B-2-304, Arihant Anchal, Jodhpur</span>
-          <Link href="/address" className="text-blue-600 font-semibold">Badlo</Link>
+        <div className="flex items-center justify-between gap-3 text-sm">
+          <span className={address ? "" : "text-red-600"}>{address || "Delivery pata nahi jodha"}</span>
+          <Link href="/address" className="text-blue-600 font-semibold shrink-0">{address ? "Badlo" : "Pata Jodo"}</Link>
         </div>
+        {orderError && <p role="alert" className="text-sm text-red-600">{orderError}</p>}
         <div className="border-2 border-gray-200 rounded-2xl p-4 text-sm space-y-1">
           <div className="flex justify-between"><span>{product.item_name}{product.item_type === "camper" ? " x " + q : ""}</span><span>Rs {price}</span></div>
           <div className="flex justify-between"><span>Delivery</span><span className="text-green-600 font-semibold">FREE</span></div>

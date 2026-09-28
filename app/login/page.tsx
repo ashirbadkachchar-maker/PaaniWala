@@ -21,10 +21,11 @@ export default function Login() {
     localStorage.setItem("pw_mobile", clean);
     // profile save/update
     await supabase.from("profiles").upsert(
-      { mobile: clean, name: "Ramesh Ji", address: "B-2-304, Arihant Anchal, Jodhpur" },
-      { onConflict: "mobile" }
+      { mobile: clean },
+      { onConflict: "mobile", ignoreDuplicates: true }
     );
-    router.push("/home");
+    const { data: profile } = await supabase.from("profiles").select("address").eq("mobile", clean).maybeSingle();
+    router.push(profile?.address ? "/home" : "/address");
   };
 
   return (
