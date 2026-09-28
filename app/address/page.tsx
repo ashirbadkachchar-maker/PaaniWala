@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { useRouter } from "next/navigation";
-import { supabase, getMobile, getBuyerProfile, parseAddress, withGps, mapsUrl, type Gps } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured, getMobile, getBuyerProfile, parseAddress, withGps, mapsUrl, type Gps } from "@/lib/supabase";
 
 const types = ["Ghar", "Office", "Dukaan"];
 
@@ -76,14 +76,28 @@ export default function Address() {
       + (pincode ? " - " + pincode : "");
     const address = withGps(text, gps);
 
-    setSaving(true);
-    const { error: dbError } = await supabase
-      .from("profiles")
-      .upsert({ mobile: getMobile(), name: name.trim(), address }, { onConflict: "mobile" });
-    setSaving(false);
-    if (dbError) {
-      setError("Pata save nahi hua, dobara koshish karo.");
+    if (!isSupabaseConfigured) {
+      console.error("Address save blocked: NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY not loaded in this environment.");
+      setError("Abhi database se connect nahi ho paa raha. Thodi der baad dobara koshish karo.");
       return;
+    }
+
+    setSaving(true);
+    try {
+      const { error: dbError } = await supabase
+        .from("profiles")
+        .upsert({ mobile: getMobile(), name: name.trim(), address }, { onConflict: "mobile" });
+      if (dbError) {
+        console.error("Address save failed:", dbError);
+        setError(`Pata save nahi hua: ${dbError.message}`);
+        return;
+      }
+    } catch (e) {
+      console.error("Address save network error:", e);
+      setError("Database se connect nahi ho paaya. Internet check karke dobara koshish karo.");
+      return;
+    } finally {
+      setSaving(false);
     }
     if (window.history.length > 1) router.back();
     else router.push("/sellers");
