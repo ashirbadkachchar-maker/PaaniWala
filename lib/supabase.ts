@@ -1,9 +1,21 @@
 import { createClient } from "@supabase/supabase-js";
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(url, key);
+export const isSupabaseConfigured = Boolean(url && key);
+
+if (!isSupabaseConfigured) {
+  console.warn(
+    "Supabase env vars missing: set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY. Database calls will fail until they are set."
+  );
+}
+
+// createClient throws on an empty URL, which crashed every page that imports this module.
+export const supabase = createClient(
+  url || "https://missing-supabase-url.invalid",
+  key || "missing-supabase-anon-key"
+);
 
 // demo mobile jab tak asli login na ho
 export function getMobile() {
