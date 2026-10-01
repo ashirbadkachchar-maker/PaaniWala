@@ -1,11 +1,13 @@
 "use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 
-export default function Login() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextUrl = searchParams.get("next") || "/home";
   const [tab, setTab] = useState<"otp" | "password">("otp");
 
   const [otp, setOtp] = useState(["", "", "", ""]);
@@ -18,19 +20,20 @@ export default function Login() {
 
   const setDigit = (i: number, v: string) => {
     const d = v.replace(/\D/g, "").slice(0, 1);
-    const next = [...otp];
-    next[i] = d;
-    setOtp(next);
+    const digits = [...otp];
+    digits[i] = d;
+    setOtp(digits);
   };
 
   const doLogin = async () => {
     const clean = mobile.replace(/\D/g, "");
+    if (clean.length < 10) return;
     localStorage.setItem("pw_mobile", clean);
     await supabase.from("profiles").upsert(
       { mobile: clean, name: "Customer", address: "B-2-304, Arihant Anchal, Jodhpur" },
       { onConflict: "mobile" }
     );
-    router.push("/home");
+    router.push(nextUrl);
   };
 
   const doPasswordLogin = async () => {
@@ -40,16 +43,16 @@ export default function Login() {
     if (!pw) { setPwErr("Password dalo"); return; }
     setPwLoading(true);
     const { data } = await supabase
-      .from("profiles")
-      .select("id,password")
-      .eq("mobile", clean)
-      .maybeSingle();
+    .from("profiles")
+    .select("id,password")
+    .eq("mobile", clean)
+    .maybeSingle();
     setPwLoading(false);
     if (!data) { setPwErr("Ye mobile registered nahi hai - pehle OTP se login karo"); return; }
     if (!data.password) { setPwErr("Aapka password abhi nahi bana - pehla order karo, password wahi milega"); return; }
-    if (data.password !== pw) { setPwErr("Galat password"); return; }
+    if (data.password!== pw) { setPwErr("Galat password"); return; }
     localStorage.setItem("pw_mobile", clean);
-    router.push("/home");
+    router.push(nextUrl);
   };
 
   return (
@@ -61,22 +64,28 @@ export default function Login() {
 
       <h2 className="text-2xl font-extrabold text-blue-900 pt-2">Login Karo</h2>
 
+      {nextUrl!== "/home" && (
+        <p className="text-center text-sm font-bold text-amber-600 bg-amber-50 rounded-xl py-2">
+          Order complete karne ke liye login karo
+        </p>
+      )}
+
       <div className="grid grid-cols-2 gap-2 bg-gray-100 rounded-2xl p-1">
         <button
           onClick={() => setTab("otp")}
-          className={"py-2.5 rounded-xl font-bold text-sm " + (tab === "otp" ? "bg-white text-blue-900 shadow" : "text-gray-500")}
+          className={"py-2.5 rounded-xl font-bold text-sm " + (tab === "otp"? "bg-white text-blue-900 shadow" : "text-gray-500")}
         >
           OTP se
         </button>
         <button
           onClick={() => setTab("password")}
-          className={"py-2.5 rounded-xl font-bold text-sm " + (tab === "password" ? "bg-white text-blue-900 shadow" : "text-gray-500")}
+          className={"py-2.5 rounded-xl font-bold text-sm " + (tab === "password"? "bg-white text-blue-900 shadow" : "text-gray-500")}
         >
           Password se
         </button>
       </div>
 
-      {tab === "otp" ? (
+      {tab === "otp"? (
         <>
           <div className="text-center text-6xl py-2">📲</div>
           <div>
@@ -146,7 +155,7 @@ export default function Login() {
           </div>
           {pwErr && <p className="text-red-500 text-sm font-semibold text-center">{pwErr}</p>}
           <button onClick={doPasswordLogin} disabled={pwLoading} className="gold-btn w-full text-white text-lg font-bold py-3 rounded-2xl disabled:opacity-60">
-            {pwLoading ? "Ruko..." : "Password se Login"}
+            {pwLoading? "Ruko..." : "Password se Login"}
           </button>
           <p className="text-center text-xs text-gray-400">Password pehle order ke baad milta hai</p>
         </>
@@ -161,5 +170,13 @@ export default function Login() {
 
       <p className="text-center text-xs text-gray-400">Login karke aap hamari shartein swikaar karte hain</p>
     </main>
+  );
+}
+
+export default function Login() {
+  return (
+    <Suspense fallback={<main className="flex-1 p-5"><p className="text-center text-gray-400">Loading...</p></main>}>
+      <LoginForm />
+    </Suspense>
   );
 }
