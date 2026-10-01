@@ -13,7 +13,7 @@ const typeName: Record<string, string> = {
   bisleri: "Bisleri Bottles",
 };
 
-const unitOf = (t: string) => (t === "camper" ? "/can" : t === "tanker" ? "/tanker" : "/bottle");
+const unitOf = (t: string) => (t === "camper"? "/can" : t === "tanker"? "/tanker" : "/bottle");
 
 function ShopInner({ sid }: { sid: string }) {
   const searchParams = useSearchParams();
@@ -25,10 +25,10 @@ function ShopInner({ sid }: { sid: string }) {
   useEffect(() => {
     (async () => {
       const { data: s } = await supabase
-        .from("sellers")
-        .select("id,business_name,area,address,rating,status")
-        .eq("id", sid)
-        .single();
+       .from("sellers")
+       .select("id,business_name,area,address,rating,status")
+       .eq("id", sid)
+       .single();
       if (s) setSeller(s);
       let q = supabase.from("products").select("id,item_type,item_name,price").eq("seller_id", sid);
       if (type) q = q.eq("item_type", type);
@@ -42,21 +42,21 @@ function ShopInner({ sid }: { sid: string }) {
     <>
       <Header />
       <main className="flex-1 p-4 space-y-4">
-        <Link href={"/sellers" + (type ? "?type=" + type : "")} className="text-blue-600 font-semibold text-sm">
+        <Link href={"/sellers" + (type? "?type=" + type : "")} className="text-blue-600 font-semibold text-sm">
           ← Sellers
         </Link>
         {seller && seller.status === "approved" && (
           <div>
             <h2 className="text-xl font-extrabold text-blue-900">{seller.business_name}</h2>
             <p className="text-sm text-gray-500">
-              {seller.area || ""}{seller.address ? " - " + seller.address : ""}
+              {seller.area || ""}{seller.address? " - " + seller.address : ""}
             </p>
           </div>
         )}
         {type && typeName[type] && (
           <p className="text-sm font-bold text-amber-600">{typeName[type]}</p>
         )}
-        {seller && seller.status !== "approved" ? (
+        {seller && seller.status!== "approved"? (
           <div className="gold-card rounded-2xl p-6 text-center space-y-1">
             <p className="font-extrabold text-blue-900">Ye dukkan abhi uplabdh nahi hai</p>
             <p className="text-sm text-gray-500">Admin approval ke baad buyers ko dikhegi</p>
@@ -64,7 +64,7 @@ function ShopInner({ sid }: { sid: string }) {
               Dusre sellers dekho
             </Link>
           </div>
-        ) : loading ? (
+        ) : loading? (
           <p className="text-gray-400 text-sm">Load ho raha hai...</p>
         ) : (
           <div className="space-y-3">
