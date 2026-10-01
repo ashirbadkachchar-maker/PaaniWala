@@ -8,8 +8,8 @@ export default function Login() {
   const router = useRouter();
   const [tab, setTab] = useState<"otp" | "password">("otp");
 
-  const [otp, setOtp] = useState(["4", "2", "", ""]);
-  const [mobile, setMobile] = useState("98765 43210");
+  const [otp, setOtp] = useState(["", "", "", ""]);
+  const [mobile, setMobile] = useState("");
 
   const [pwMobile, setPwMobile] = useState("");
   const [pw, setPw] = useState("");
@@ -27,7 +27,7 @@ export default function Login() {
     const clean = mobile.replace(/\D/g, "");
     localStorage.setItem("pw_mobile", clean);
     await supabase.from("profiles").upsert(
-      { mobile: clean, name: "Ramesh Ji", address: "B-2-304, Arihant Anchal, Jodhpur" },
+      { mobile: clean, name: "Customer", address: "B-2-304, Arihant Anchal, Jodhpur" },
       { onConflict: "mobile" }
     );
     router.push("/home");
@@ -85,6 +85,7 @@ export default function Login() {
               <span className="font-bold text-blue-900 border-r-2 border-amber-300 pr-2">+91</span>
               <input
                 className="flex-1 outline-none font-bold text-blue-900"
+                placeholder="98765 43210"
                 value={mobile}
                 onChange={(e) => setMobile(e.target.value)}
                 inputMode="numeric"
