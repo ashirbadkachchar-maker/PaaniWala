@@ -1,64 +1,114 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import SellerNav from "@/components/SellerNav";
+import Header from "@/components/Header";
+import BottomNav from "@/components/BottomNav";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
 export default function SellerDashboard() {
   const router = useRouter();
-  const [stats, setStats] = useState({ orders: 0, pending: 0, earning: 0, commission: 0 });
+  const [sellerId, setSellerId] = useState<string | null>(null);
+  const [sellerName, setSellerName] = useState("");
+  const [stats, setStats] = useState({ orders: 0, products: 0, earning: 0 });
   const [recent, setRecent] = useState<any[]>([]);
 
   useEffect(() => {
     const sid = localStorage.getItem("pw_seller_id");
-    if (!sid) { router.push("/seller"); return; }
-    supabase.from("orders").select("*").eq("seller_id", sid).order("created_at", { ascending: false })
-      .then(({ data }) => {
-        const list = data || [];
-        setStats({
-          orders: list.length,
-          pending: list.filter((o) => o.status === "Raste Me Hai").length,
-          earning: list.reduce((s, o) => s + (o.seller_earning || 0), 0),
-          commission: list.reduce((s, o) => s + (o.commission || 0), 0),
-        });
-        setRecent(list.slice(0, 5));
-      });
+    if (!sid) { router.push("/seller/login"); return; }
+    setSellerId(sid);
+    setSellerName(localStorage.getItem("pw_seller_name") || "Seller");
+    (async () => {
+      const { data: orders } = await supabase
+       .from("orders")
+       .select("id,item_name,qty,price,seller_earning,status,created_at")
+       .eq("seller_id", sid)
+       .order("created_at", { ascending: false })
+       .limit(20);
+      const { data: products } = await supabase
+       .from("products")
+       .select("id")
+       .eq("seller_id", sid);
+      const list = orders || [];
+      const today = new Date().toDateString();
+      const todayOrders = list.filter((o: any) => o.created_at && new Date(o.created_at).toDateString() === today);
+      const earning = todayOrders.reduce((s: number, o: any) => s + (Number(o.seller_earning) || 0), 0);
+      setStats({ orders: todayOrders.length, products: (products || []).length, earning });
+      setRecent(list.slice(0, 5));
+    })();
   }, [router]);
 
-  const cards = [
-    { label: "Kul Orders", value: stats.orders, bg: "bg-blue-100 text-blue-900" },
-    { label: "Pending", value: stats.pending, bg: "bg-amber-100 text-amber-800" },
-    { label: "Meri Earning", value: "Rs " + stats.earning, bg: "bg-green-100 text-green-800" },
-    { label: "Platform Charge", value: "Rs " + stats.commission, bg: "bg-purple-100 text-purple-800" },
-  ];
+  const logout = () => {
+    localStorage.removeItem("pw_seller_id");
+    localStorage.removeItem("pw_seller_name");
+    router.push("/seller/login");
+  };
+
+  if (!sellerId) {
+    return <main className="flex-1 p-6"><p className="text-center text-gray-400">Loading...</p></main>;
+  }
 
   return (
     <>
-      <SellerNav />
-      <main className="flex-1 p-4 space-y-4 bg-gray-50">
-        <h2 className="text-xl font-extrabold text-blue-900">Mera Dashboard</h2>
-        <div className="grid grid-cols-2 gap-3">
-          {cards.map((c) => (
-            <div key={c.label} className={c.bg + " rounded-2xl p-4"}>
-              <p className="text-2xl font-extrabold">{c.value}</p>
-              <p className="text-sm font-semibold">{c.label}</p>
-            </div>
-          ))}
+      <Header />
+      <main className="flex-1 p-4 space-y-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-extrabold text-blue-900">Namaste, {sellerName}</h2>
+            <p className="text-sm text-gray-500">Aaj ka hisab</p>
+          </div>
+          <button onClick={logout} className="text-sm font-bold text-red-500 border border-red-200 rounded-xl px-3 py-1.5">
+            Logout
+          </button>
         </div>
-        <h3 className="font-bold text-blue-900">Taze Orders</h3>
-        <div className="space-y-2">
-          {recent.map((o) => (
-            <div key={o.id} className="bg-white border-2 border-gray-200 rounded-2xl p-3 text-sm flex justify-between">
-              <div>
-                <p className="font-bold text-blue-900">{o.order_id} - {o.item_name}</p>
-                <p className="text-gray-500">Rs {o.total} (meri earning Rs {o.seller_earning})</p>
+
+        <div className="grid grid-cols-3 gap-3">
+          <div className="gold-card rounded-2xl p-3 text-center">
+            <p className="text-2xl font-extrabold text-blue-900">{stats.orders}</p>
+            <p className="text-xs text-gray-500">Aaj ke orders</p>
+          </div>
+          <div className="gold-card rounded-2xl p-3 text-center">
+            <p className="text-2xl font-extrabold text-blue-900">{stats.products}</p>
+            <p className="text-xs text-gray-500">Products</p>
+          </div>
+          <div className="gold-card rounded-2xl p-3 text-center">
+            <p className="text-2xl font-extrabold text-amber-600">Rs {stats.earning}</p>
+            <p className="text-xs text-gray-500">Aaj ki kamai</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Link href="/seller/products" className="gold-btn rounded-2xl p-4 text-white font-bold text-center">
+            Mere Products
+          </Link>
+          <Link href="/seller/products/add" className="bg-blue-900 rounded-2xl p-4 text-white font-bold text-center">
+            + Naya Product
+          </Link>
+        </div>
+
+        <Link href="/seller/orders" className="block bg-green-700 rounded-2xl p-4 text-white font-bold text-center">
+          Orders Dekho
+        </Link>
+
+        <div>
+          <p className="font-extrabold text-blue-900 mb-2">Taze Orders</p>
+          <div className="space-y-2">
+            {recent.map((o) => (
+              <div key={o.id} className="gold-card rounded-2xl p-3 flex justify-between items-center gap-2">
+                <div>
+                  <p className="font-bold text-blue-900 text-sm">{o.item_name}</p>
+                  <p className="text-xs text-gray-500">{o.status || "Naya"}</p>
+                </div>
+                <span className="font-extrabold text-amber-600 whitespace-nowrap">Rs {o.price}</span>
               </div>
-              <span className="text-xs font-bold px-2 py-1 rounded-full bg-amber-100 text-amber-800 h-fit">{o.status}</span>
-            </div>
-          ))}
-          {recent.length === 0 && <p className="text-gray-400 text-sm">Abhi koi order nahi - Products me apna samaan jodo</p>}
+            ))}
+            {recent.length === 0 && (
+              <p className="text-sm text-gray-400 text-center">Abhi koi order nahi hai</p>
+            )}
+          </div>
         </div>
       </main>
+      <BottomNav />
     </>
   );
 }
