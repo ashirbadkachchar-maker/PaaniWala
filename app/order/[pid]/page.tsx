@@ -15,6 +15,7 @@ export default function Checkout({ params }: { params: { pid: string } }) {
   const [qty, setQty] = useState(1);
   const [time, setTime] = useState(times[1]);
   const [saving, setSaving] = useState(false);
+  const [newPassword, setNewPassword] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -27,24 +28,43 @@ export default function Checkout({ params }: { params: { pid: string } }) {
     })();
   }, [params.pid]);
 
-  if (!product) {
-    return (<><Header /><main className="flex-1 p-4"><p className="text-gray-400">Load ho raha hai...</p></main><BottomNav /></>);
-  }
-
-  const q = product.item_type === "camper" ? qty : 1;
-  const price = product.price * q;
-  const rate = seller ? seller.commission_rate || 5 : 5;
-  const commission = Math.round((price * rate) / 100);
+  /* Naya customer? — 4-digit password banao */
+  const ensureCustomerPassword = async (mobile: string) => {
+    if (!mobile) return null;
+    const { data: existing } = await supabase
+     .from("customers").select("id,password").eq("mobile", mobile).maybeSingle();
+    if (!existing) {
+      const pw = String(Math.floor(1000 + Math.random() * 9000));
+      await supabase.from("customers").insert({
+        mobile: mobile,
+        password: pw,
+        address: "B-2-304, Arihant Anchal, Jodhpur",
+      });
+      return pw;
+    }
+    if (!existing.password) {
+      const pw = String(Math.floor(1000 + Math.random() * 9000));
+      await supabase.from("customers").update({ password: pw }).eq("id", existing.id);
+      return pw;
+    }
+    return null;
+  };
 
   const placeOrder = async () => {
     setSaving(true);
+    const mobile = getMobile();
+
+    // 1. Pehli baar hai to password banao
+    const generatedPw = await ensureCustomerPassword(mobile);
+
+    // 2. Order save karo (jaise pehle tha)
     const orderId = makeOrderId();
     await supabase.from("orders").insert({
       order_id: orderId,
-      mobile: getMobile(),
+      mobile: mobile,
       seller_id: product.seller_id,
       item_type: product.item_type,
-      item_name: (product.item_type === "camper" ? q + " x " : "") + product.item_name,
+      item_name: (product.item_type === "camper"? q + " x " : "") + product.item_name,
       qty: q,
       price: price,
       discount: 0,
@@ -57,8 +77,49 @@ export default function Checkout({ params }: { params: { pid: string } }) {
     });
     localStorage.setItem("pw_last_order", orderId);
     setSaving(false);
-    router.push("/success");
+
+    // 3. Naya password bana to pehle dikhao, warna seedha success
+    if (generatedPw) {
+      setNewPassword(generatedPw);
+    } else {
+      router.push("/success");
+    }
   };
+
+  /* Naye customer ko password dikhao */
+  if (newPassword) {
+    return (
+      <>
+        <Header />
+        <main className="flex-1 p-6 flex flex-col items-center justify-center text-center space-y-4">
+          <div className="w-20 h-20 rounded-full gold-btn flex items-center justify-center text-4xl text-white">✓</div>
+          <h2 className="text-xl font-extrabold text-blue-900">Order Ho Gaya!</h2>
+          <div className="gold-card rounded-2xl p-5 w-full space-y-2">
+            <p className="text-sm text-gray-500">Aapka login password ban gaya hai:</p>
+            <p className="text-5xl font-extrabold text-blue-900 tracking-widest">{newPassword}</p>
+            <p className="text-xs text-gray-500">
+              Mobile: {getMobile()}<br />
+              Agli baar isi mobile + password se login karke seedha order karo
+            </p>
+          </div>
+          <p className="text-sm font-bold text-red-500">Iska screenshot le lo — dobara nahi dikhega!</p>
+          <button onClick={() => router.push("/success")} className="gold-btn w-full text-white text-lg font-bold py-3 rounded-2xl">
+            Note Kar Liya — Aage Badho
+          </button>
+        </main>
+        <BottomNav />
+      </>
+    );
+  }
+
+  if (!product) {
+    return (<><Header /><main className="flex-1 p-4"><p className="text-gray-400">Load ho raha hai...</p></main><BottomNav /></>);
+  }
+
+  const q = product.item_type === "camper"? qty : 1;
+  const price = product.price * q;
+  const rate = seller? seller.commission_rate || 5 : 5;
+  const commission = Math.round((price * rate) / 100);
 
   return (
     <>
@@ -68,8 +129,8 @@ export default function Checkout({ params }: { params: { pid: string } }) {
         <h2 className="text-xl font-bold text-blue-900">Order Confirm Karo</h2>
         <div className="gold-card rounded-2xl p-4">
           <p className="font-bold text-blue-900">{product.item_name}</p>
-          <p className="text-sm text-gray-500">{seller ? seller.business_name : ""}</p>
-          <p className="text-lg font-extrabold text-amber-600 mt-1">Rs {product.price}{product.item_type === "camper" ? " /can" : ""}</p>
+          <p className="text-sm text-gray-500">{seller? seller.business_name : ""}</p>
+          <p className="text-lg font-extrabold text-amber-600 mt-1">Rs {product.price}{product.item_type === "camper"? " /can" : ""}</p>
         </div>
         {product.item_type === "camper" && (
           <div className="flex items-center justify-center gap-6 py-1">
@@ -82,7 +143,7 @@ export default function Checkout({ params }: { params: { pid: string } }) {
           <p className="font-semibold text-blue-900 mb-2">Delivery Time</p>
           <div className="flex flex-wrap gap-2">
             {times.map((t) => (
-              <button key={t} onClick={() => setTime(t)} className={"chip " + (time === t ? "chip-on" : "chip-off")}>{t}</button>
+              <button key={t} onClick={() => setTime(t)} className={"chip " + (time === t? "chip-on" : "chip-off")}>{t}</button>
             ))}
           </div>
         </div>
@@ -91,7 +152,7 @@ export default function Checkout({ params }: { params: { pid: string } }) {
           <Link href="/address" className="text-blue-600 font-semibold">Badlo</Link>
         </div>
         <div className="border-2 border-gray-200 rounded-2xl p-4 text-sm space-y-1">
-          <div className="flex justify-between"><span>{product.item_name}{product.item_type === "camper" ? " x " + q : ""}</span><span>Rs {price}</span></div>
+          <div className="flex justify-between"><span>{product.item_name}{product.item_type === "camper"? " x " + q : ""}</span><span>Rs {price}</span></div>
           <div className="flex justify-between"><span>Delivery</span><span className="text-green-600 font-semibold">FREE</span></div>
           <div className="flex justify-between font-extrabold text-blue-900 text-base pt-1 border-t">
             <span>Kul</span><span>Rs {price}</span>
@@ -99,7 +160,7 @@ export default function Checkout({ params }: { params: { pid: string } }) {
           <p className="text-xs text-gray-400 pt-1">Isme platform service charge ({rate}%) shamil hai</p>
         </div>
         <button onClick={placeOrder} disabled={saving} className="gold-btn w-full text-white text-lg font-bold py-3 rounded-2xl disabled:opacity-60">
-          {saving ? "Ruko..." : "Order Karo - Rs " + price}
+          {saving? "Ruko..." : "Order Karo - Rs " + price}
         </button>
       </main>
       <BottomNav />
