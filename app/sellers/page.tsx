@@ -6,7 +6,7 @@ import BottomNav from "@/components/BottomNav";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
-/* Doori km me — Haversine formula */
+/* Doori km me - Haversine formula */
 function getKm(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371;
   const dLa = ((lat2 - lat1) * Math.PI) / 180;
@@ -19,12 +19,13 @@ function getKm(lat1: number, lon1: number, lat2: number, lon2: number) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-/* Rating stars — SVG, computer par bhi sahi dikhega */
+/* Rating stars - SVG, computer par bhi sahi dikhega */
 function Stars({ rating }: { rating: number }) {
   const full = Math.round(rating || 0);
   return (
     <span className="inline-flex items-center">
-      {[1, 2, 3, 4, 5[STRIPPED 42 bytes]"14" height="14" viewBox="0 0 24 24"
+      {[1, 2, 3, 4, 5].map((i) => (
+        <svg key={i} width="14" height="14" viewBox="0 0 24 24"
           fill={i <= full ? "#f59e0b" : "#e5e7eb"}>
           <path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z" />
         </svg>
@@ -36,7 +37,7 @@ function Stars({ rating }: { rating: number }) {
 
 function SellersList() {
   const searchParams = useSearchParams();
-  const type = searchParams.get("type") || ""; // camper | tanker
+  const type = searchParams.get("type") || "";
   const [sellers, setSellers] = useState<any[]>([]);
   const [loc, setLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [locMsg, setLocMsg] = useState("Location li ja rahi hai...");
@@ -61,7 +62,7 @@ function SellersList() {
         setLoc({ lat: p.coords.latitude, lng: p.coords.longitude });
         setLocMsg("");
       },
-      () => setLocMsg("Location allow karo — nazdeeki sellers pehle dikhenge"),
+      () => setLocMsg("Location allow karo - nazdeeki sellers pehle dikhenge"),
       { timeout: 10000 }
     );
   }, []);
@@ -86,12 +87,12 @@ function SellersList() {
     : "Sellers Dekho";
 
   const rateText = (s: any) => {
-    if (type === "camper") return s.camper_rate != null ? `₹${s.camper_rate}/can` : "";
-    if (type === "tanker") return s.tanker_rate != null ? `₹${s.tanker_rate}/tanker` : "";
+    if (type === "camper") return s.camper_rate != null ? "Rs " + s.camper_rate + "/can" : "";
+    if (type === "tanker") return s.tanker_rate != null ? "Rs " + s.tanker_rate + "/tanker" : "";
     const parts = [];
-    if (s.camper_rate != null) parts.push(`₹${s.camper_rate}/can`);
-    if (s.tanker_rate != null) parts.push(`₹${s.tanker_rate}/tanker`);
-    return parts.join(" • ");
+    if (s.camper_rate != null) parts.push("Rs " + s.camper_rate + "/can");
+    if (s.tanker_rate != null) parts.push("Rs " + s.tanker_rate + "/tanker");
+    return parts.join(" | ");
   };
 
   return (
@@ -100,7 +101,7 @@ function SellersList() {
       <main className="flex-1 p-4 space-y-3">
         <h2 className="text-xl font-bold text-blue-900">{title}</h2>
         <p className="text-sm text-gray-500">
-          {loc ? "Nazdeek se door tak — doori ke hisaab se" : locMsg}
+          {loc ? "Nazdeek se door tak - doori ke hisaab se" : locMsg}
         </p>
         <div className="space-y-3">
           {sorted.map((s) => (
@@ -114,7 +115,7 @@ function SellersList() {
                 </div>
                 {s.dist != null && (
                   <span className="text-xs font-bold text-green-700 bg-green-100 px-2 py-1 rounded-full whitespace-nowrap">
-                    {s.dist < 1 ? `${Math.round(s.dist * 1000)} m` : `${s.dist.toFixed(1)} km`}
+                    {s.dist < 1 ? Math.round(s.dist * 1000) + " m" : s.dist.toFixed(1) + " km"}
                   </span>
                 )}
               </div>
