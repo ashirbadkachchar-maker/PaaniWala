@@ -41,6 +41,7 @@ function SellersList() {
   const [sellers, setSellers] = useState<any[]>([]);
   const [loc, setLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [locMsg, setLocMsg] = useState("Location li ja rahi hai...");
+  const [prodRates, setProdRates] = useState<Record<string, number>>({});
 
   useEffect(() => {
     supabase
@@ -51,6 +52,25 @@ function SellersList() {
         if (!error && data) setSellers(data);
       });
   }, []);
+
+  /* Bottle types ke liye har seller ka sabse sasta rate */
+  useEffect(() => {
+    if ((type === "bottle20" || type === "bisleri") && sellers.length > 0) {
+      const ids = sellers.map((x: any) => x.id);
+      supabase
+        .from("products")
+        .select("seller_id,price")
+        .in("seller_id", ids)
+        .eq("item_type", type)
+        .then(({ data }) => {
+          const m: Record<string, number> = {};
+          (data || []).forEach((p: any) => {
+            if (m[p.seller_id] == null || p.price < m[p.seller_id]) m[p.seller_id] = p.price;
+          });
+          setProdRates(m);
+        });
+    }
+  }, [type, sellers]);
 
   useEffect(() => {
     if (!("geolocation" in navigator)) {
@@ -84,11 +104,17 @@ function SellersList() {
   const title =
     type === "camper" ? "Camper Sellers"
     : type === "tanker" ? "Tanker Sellers"
+    : type === "bottle20" ? "20L Bottle Sellers"
+    : type === "bisleri" ? "Bisleri Bottle Sellers"
     : "Sellers Dekho";
 
   const rateText = (s: any) => {
     if (type === "camper") return s.camper_rate != null ? "Rs " + s.camper_rate + "/can" : "";
     if (type === "tanker") return s.tanker_rate != null ? "Rs " + s.tanker_rate + "/tanker" : "";
+    if (type === "bottle20" || type === "bisleri") {
+      const r = prodRates[s.id];
+      return r != null ? "Rs " + r + "/bottle" : "Rate dukkan me dekho";
+    }
     const parts = [];
     if (s.camper_rate != null) parts.push("Rs " + s.camper_rate + "/can");
     if (s.tanker_rate != null) parts.push("Rs " + s.tanker_rate + "/tanker");
