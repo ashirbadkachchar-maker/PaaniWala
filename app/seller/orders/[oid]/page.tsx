@@ -6,7 +6,7 @@ import BottomNav from "@/components/BottomNav";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
-const steps = ["Naya", "Confirm", "Raste Me Hai", "Pahuncha"];
+const steps = ["Raste Me Hai", "Pahuncha"];
 
 export default function OrderDetail({ params }: { params: { oid: string } }) {
   const router = useRouter();
@@ -17,12 +17,13 @@ export default function OrderDetail({ params }: { params: { oid: string } }) {
   const load = async () => {
     const sid = localStorage.getItem("pw_seller_id");
     if (!sid) { router.push("/seller/login"); return; }
+    // id ya order_id dono se dhoondho - tera schema me order_id hai
     const { data } = await supabase
-     .from("orders")
-     .select("*")
-     .eq("id", params.oid)
-     .eq("seller_id", sid)
-     .maybeSingle();
+   .from("orders")
+   .select("*")
+   .or(`id.eq.${params.oid},order_id.eq.${params.oid}`)
+   .eq("seller_id", sid)
+   .maybeSingle();
     if (!data) { setNotFound(true); return; }
     setOrder(data);
   };
@@ -30,8 +31,9 @@ export default function OrderDetail({ params }: { params: { oid: string } }) {
   useEffect(() => { load(); }, []);
 
   const setStatus = async (st: string) => {
+    if (!order) return;
     setSaving(true);
-    await supabase.from("orders").update({ status: st }).eq("id", params.oid);
+    await supabase.from("orders").update({ status: st }).eq("id", order.id);
     setSaving(false);
     load();
   };
@@ -53,8 +55,8 @@ export default function OrderDetail({ params }: { params: { oid: string } }) {
     return <main className="flex-1 p-6"><p className="text-center text-gray-400">Loading...</p></main>;
   }
 
-  const st = order.status || "Naya";
-  const stepIdx = steps.indexOf(st);
+  const st = order.status || "Raste Me Hai";
+  const stepIdx = st === "Pahuncha"? 1 : 0;
 
   return (
     <>
@@ -64,17 +66,17 @@ export default function OrderDetail({ params }: { params: { oid: string } }) {
         <h2 className="text-xl font-extrabold text-blue-900">Order Detail</h2>
 
         <div className="gold-card rounded-2xl p-4 space-y-2">
-          <div className="flex justify-between"><span className="text-gray-500 text-sm">Order ID</span><span className="font-bold text-blue-900 text-sm">{String(order.id).slice(0, 8)}</span></div>
+          <div className="flex justify-between"><span className="text-gray-500 text-sm">Order ID</span><span className="font-bold text-blue-900 text-sm">{order.order_id || String(order.id).slice(0, 8)}</span></div>
           <div className="flex justify-between"><span className="text-gray-500 text-sm">Item</span><span className="font-bold text-blue-900 text-sm">{order.item_name}</span></div>
           <div className="flex justify-between"><span className="text-gray-500 text-sm">Qty</span><span className="font-bold text-blue-900 text-sm">{order.qty}</span></div>
           <div className="flex justify-between"><span className="text-gray-500 text-sm">Kul Price</span><span className="font-extrabold text-amber-600">Rs {order.price}</span></div>
-          <div className="flex justify-between"><span className="text-gray-500 text-sm">Platform Fee ({order.commission_rate || 5}%)</span><span className="font-bold text-red-500 text-sm">- Rs {order.commission || 0}</span></div>
+          <div className="flex justify-between"><span className="text-gray-500 text-sm">Platform Fee (5%)</span><span className="font-bold text-red-500 text-sm">- Rs {order.commission || 0}</span></div>
           <div className="flex justify-between border-t pt-2"><span className="text-gray-500 text-sm">Aapki Kamai</span><span className="font-extrabold text-green-600">Rs {order.seller_earning || order.price}</span></div>
         </div>
 
         <div className="gold-card rounded-2xl p-4 space-y-2">
-          <div className="flex justify-between"><span className="text-gray-500 text-sm">Buyer Mobile</span><span className="font-bold text-blue-900 text-sm">+91 {order.buyer_mobile}</span></div>
-          <div className="flex justify-between"><span className="text-gray-500 text-sm">Delivery Time</span><span className="font-bold text-blue-900 text-sm">{order.delivery_time}</span></div>
+          <div className="flex justify-between"><span className="text-gray-500 text-sm">Buyer Mobile</span><span className="font-bold text-blue-900 text-sm">+91 {order.mobile}</span></div>
+          <div className="flex justify-between"><span className="text-gray-500 text-sm">Delivery Slot</span><span className="font-bold text-blue-900 text-sm">{order.delivery_slot}</span></div>
           <div><span className="text-gray-500 text-sm">Address</span><p className="font-bold text-blue-900 text-sm">{order.address}</p></div>
         </div>
 
@@ -104,24 +106,14 @@ export default function OrderDetail({ params }: { params: { oid: string } }) {
         )}
 
         <div className="space-y-2">
-          {st === "Naya" && (
-            <>
-              <button onClick={() => setStatus("Confirm")} disabled={saving} className="gold-btn w-full text-white text-lg font-bold py-3 rounded-2xl disabled:opacity-60">
-                ✓ Confirm Karo
-              </button>
-              <button onClick={() => setStatus("Cancel")} disabled={saving} className="w-full border-2 border-red-200 text-red-500 font-bold py-3 rounded-2xl disabled:opacity-60">
-                ✗ Reject Karo
-              </button>
-            </>
-          )}
-          {st === "Confirm" && (
-            <button onClick={() => setStatus("Raste Me Hai")} disabled={saving} className="gold-btn w-full text-white text-lg font-bold py-3 rounded-2xl disabled:opacity-60">
-              Raste Me Bhejo
-            </button>
-          )}
           {st === "Raste Me Hai" && (
             <button onClick={() => setStatus("Pahuncha")} disabled={saving} className="w-full bg-green-600 text-white text-lg font-bold py-3 rounded-2xl disabled:opacity-60">
               ✓ Pahuncha - Complete Karo
+            </button>
+          )}
+          {st === "Naya" && (
+            <button onClick={() => setStatus("Raste Me Hai")} disabled={saving} className="gold-btn w-full text-white text-lg font-bold py-3 rounded-2xl disabled:opacity-60">
+              Raste Me Bhejo
             </button>
           )}
           {st === "Pahuncha" && (
