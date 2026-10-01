@@ -26,29 +26,28 @@ export default function Checkout({ params }: { params: { pid: string } }) {
         if (s) setSeller(s);
       }
     })();
-  }, [params.pid]);
-
-  /* Naya customer? — 4-digit password banao */
-  const ensureCustomerPassword = async (mobile: string) => {
-    if (!mobile) return null;
-    const { data: existing } = await supabase
-     .from("customers").select("id,password").eq("mobile", mobile).maybeSingle();
-    if (!existing) {
-      const pw = String(Math.floor(1000 + Math.random() * 9000));
-      await supabase.from("customers").insert({
-        mobile: mobile,
-        password: pw,
-        address: "B-2-304, Arihant Anchal, Jodhpur",
-      });
-      return pw;
-    }
-    if (!existing.password) {
-      const pw = String(Math.floor(1000 + Math.random() * 9000));
-      await supabase.from("customers").update({ password: pw }).eq("id", existing.id);
-      return pw;
-    }
-    return null;
-  };
+  }, [/* Naya customer? — 4-digit password banao (profiles table me) */
+const ensureCustomerPassword = async (mobile: string) => {
+  if (!mobile) return null;
+  const { data: existing } = await supabase
+    .from("profiles").select("id,password").eq("mobile", mobile).maybeSingle();
+  if (!existing) {
+    const pw = String(Math.floor(1000 + Math.random() * 9000));
+    await supabase.from("profiles").insert({
+      mobile: mobile,
+      password: pw,
+      name: "Customer",
+      address: "B-2-304, Arihant Anchal, Jodhpur",
+    });
+    return pw;
+  }
+  if (!existing.password) {
+    const pw = String(Math.floor(1000 + Math.random() * 9000));
+    await supabase.from("profiles").update({ password: pw }).eq("id", existing.id);
+    return pw;
+  }
+  return null;
+};
 
   const placeOrder = async () => {
     setSaving(true);
