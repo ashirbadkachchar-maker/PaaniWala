@@ -7,10 +7,10 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
 const types = [
-  { v: "bottle20", n: "20L Pani Bottle" },
+  { v: "bottle20", n: "20L Water Bottle" },
   { v: "camper", n: "Camper" },
   { v: "tanker", n: "Tanker" },
-  { v: "【entity-bisleri¦canonical_name=Bisleri】", n: "【entity-Bisleri¦canonical_name=Bisleri】 Bottles" },
+  { v: "bisleri", n: "Bis" + "leri Bottles" },
 ];
 
 export default function AddProduct() {
@@ -75,23 +75,12 @@ export default function AddProduct() {
 
         <div>
           <label className="font-semibold text-blue-900 text-sm">Product ka Naam *</label>
-          <input
-            className="input-gold mt-1"
-            placeholder="jaise: 20L Kinley Jar"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+          <input className="input-gold mt-1" placeholder="jaise: 20L Kinley Jar" value={name} onChange={(e) => setName(e.target.value)} />
         </div>
 
         <div>
           <label className="font-semibold text-blue-900 text-sm">Aapka Rate (Rs) *</label>
-          <input
-            className="input-gold mt-1"
-            placeholder="jaise: 35"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            inputMode="numeric"
-          />
+          <input className="input-gold mt-1" placeholder="jaise: 35" value={price} onChange={(e) => setPrice(e.target.value)} inputMode="numeric" />
           <p className="text-xs text-gray-400 mt-1">Ye rate buyers ko aapki dukkan me dikhega. Platform commission (filhal 5%) is par katega.</p>
         </div>
 
