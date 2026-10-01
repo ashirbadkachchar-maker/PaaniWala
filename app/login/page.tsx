@@ -8,11 +8,9 @@ export default function Login() {
   const router = useRouter();
   const [tab, setTab] = useState<"otp" | "password">("otp");
 
-  // OTP wala (purana)
   const [otp, setOtp] = useState(["4", "2", "", ""]);
   const [mobile, setMobile] = useState("98765 43210");
 
-  // Password wala (naya)
   const [pwMobile, setPwMobile] = useState("");
   const [pw, setPw] = useState("");
   const [pwErr, setPwErr] = useState("");
@@ -42,14 +40,14 @@ export default function Login() {
     if (!pw) { setPwErr("Password dalo"); return; }
     setPwLoading(true);
     const { data } = await supabase
-     .from("profiles")
-     .select("id,password")
-     .eq("mobile", clean)
-     .maybeSingle();
+      .from("profiles")
+      .select("id,password")
+      .eq("mobile", clean)
+      .maybeSingle();
     setPwLoading(false);
-    if (!data) { setPwErr("Ye mobile registered nahi hai — pehle OTP se login karo"); return; }
-    if (!data.password) { setPwErr("Aapka password abhi nahi bana — pehla order karo, password wahi milega"); return; }
-    if (data.password!== pw) { setPwErr("Galat password"); return; }
+    if (!data) { setPwErr("Ye mobile registered nahi hai - pehle OTP se login karo"); return; }
+    if (!data.password) { setPwErr("Aapka password abhi nahi bana - pehla order karo, password wahi milega"); return; }
+    if (data.password !== pw) { setPwErr("Galat password"); return; }
     localStorage.setItem("pw_mobile", clean);
     router.push("/home");
   };
@@ -63,23 +61,22 @@ export default function Login() {
 
       <h2 className="text-2xl font-extrabold text-blue-900 pt-2">Login Karo</h2>
 
-      {/* Tab switcher */}
       <div className="grid grid-cols-2 gap-2 bg-gray-100 rounded-2xl p-1">
         <button
           onClick={() => setTab("otp")}
-          className={"py-2.5 rounded-xl font-bold text-sm " + (tab === "otp"? "bg-white text-blue-900 shadow" : "text-gray-500")}
+          className={"py-2.5 rounded-xl font-bold text-sm " + (tab === "otp" ? "bg-white text-blue-900 shadow" : "text-gray-500")}
         >
           OTP se
         </button>
         <button
           onClick={() => setTab("password")}
-          className={"py-2.5 rounded-xl font-bold text-sm " + (tab === "password"? "bg-white text-blue-900 shadow" : "text-gray-500")}
+          className={"py-2.5 rounded-xl font-bold text-sm " + (tab === "password" ? "bg-white text-blue-900 shadow" : "text-gray-500")}
         >
           Password se
         </button>
       </div>
 
-      {tab === "otp"? (
+      {tab === "otp" ? (
         <>
           <div className="text-center text-6xl py-2">📲</div>
           <div>
@@ -108,7 +105,7 @@ export default function Login() {
                 />
               ))}
             </div>
-            <p className="text-center text-sm text-gray-400 mt-2">⏱ OTP dobara bhejo - 0:25</p>
+            <p className="text-center text-sm text-gray-400 mt-2">OTP dobara bhejo - 0:25</p>
           </div>
           <button onClick={doLogin} className="gold-btn w-full text-white text-lg font-bold py-3 rounded-2xl">
             Login Karo
@@ -116,7 +113,8 @@ export default function Login() {
         </>
       ) : (
         <>
-          <div className="flex justify-center py-2"[STRIPPED 25 bytes]"56" height="56" viewBox="0 0 24 24" fill="none" stroke="#1e3a8a" strokeWidth="2">
+          <div className="flex justify-center py-2">
+            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#1e3a8a" strokeWidth="2">
               <rect x="4" y="10" width="16" height="10" rx="2" />
               <path d="M8 10V7a4 4 0 018 0v3" />
             </svg>
@@ -147,7 +145,7 @@ export default function Login() {
           </div>
           {pwErr && <p className="text-red-500 text-sm font-semibold text-center">{pwErr}</p>}
           <button onClick={doPasswordLogin} disabled={pwLoading} className="gold-btn w-full text-white text-lg font-bold py-3 rounded-2xl disabled:opacity-60">
-            {pwLoading? "Ruko..." : "Password se Login"}
+            {pwLoading ? "Ruko..." : "Password se Login"}
           </button>
           <p className="text-center text-xs text-gray-400">Password pehle order ke baad milta hai</p>
         </>
