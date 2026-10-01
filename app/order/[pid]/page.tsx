@@ -61,19 +61,24 @@ export default function Checkout({ params }: { params: { pid: string } }) {
 
     const generatedPw = await ensureCustomerPassword(mobile);
 
-    const orderId = makeOrderId();
+        const orderId = makeOrderId();
+    const finalQty = product.item_type === "tanker" ? 1 : qty;
+    const finalPrice = product.price * finalQty;
+    const rate = seller ? seller.commission_rate || 5 : 5;
+    const finalCommission = Math.round((finalPrice * rate) / 100);
+
     await supabase.from("orders").insert({
       order_id: orderId,
       mobile: mobile,
       seller_id: product.seller_id,
       item_type: product.item_type,
-      item_name: (product.item_type === "tanker"? "" : q + " x ") + product.item_name,
-      qty: q,
-      price: price,
+      item_name: (product.item_type === "tanker" ? "" : finalQty + " x ") + product.item_name,
+      qty: finalQty,
+      price: finalPrice,
       discount: 0,
-      total: price,
-      commission: commission,
-      seller_earning: price - commission,
+      total: finalPrice,
+      commission: finalCommission,
+      seller_earning: finalPrice - finalCommission,
       delivery_slot: time,
       address: "B-2-304, Arihant Anchal, Jodhpur",
       status: "Raste Me Hai",
