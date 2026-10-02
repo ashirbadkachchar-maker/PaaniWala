@@ -10,17 +10,18 @@ const tabs = [
 ];
 
 export default function BottomNav(){
-  const path = usePathname();
+  const pathname = usePathname();
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-amber-100 flex justify-around py-2 pb-3 z-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-amber-100 flex justify-around py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] z-50">
       {tabs.map(t=>{
-        const active = path.startsWith(t.href);
+        const active = pathname.startsWith(t.href);
         return (
-          <Link key={t.href} href={t.href} className={`flex flex-col items-center text-[11px] ${active ? "text-blue-900 font-extrabold" : "text-gray-400"}`}>
-            <span className="text-xl">{t.icon}</span>{t.label}
+          <Link key={t.href} href={t.href} className={`flex flex-col items-center gap-0.5 text-[11px] ${active ? "text-blue-900 font-extrabold" : "text-gray-400"}`}>
+            <span className="text-xl leading-none">{t.icon}</span>
+            <span>{t.label}</span>
           </Link>
         )
       })}
     </nav>
-  )
+  );
 }
