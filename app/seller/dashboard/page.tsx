@@ -20,15 +20,15 @@ export default function SellerDashboard() {
     setSellerName(localStorage.getItem("pw_seller_name") || "Seller");
     (async () => {
       const { data: orders } = await supabase
-       .from("orders")
-       .select("id,item_name,qty,price,seller_earning,status,created_at")
-       .eq("seller_id", sid)
-       .order("created_at", { ascending: false })
-       .limit(20);
+        .from("orders")
+        .select("id,item_name,qty,price,seller_earning,status,created_at")
+        .eq("seller_id", sid)
+        .order("created_at", { ascending: false })
+        .limit(20);
       const { data: products } = await supabase
-       .from("products")
-       .select("id")
-       .eq("seller_id", sid);
+        .from("products")
+        .select("id")
+        .eq("seller_id", sid);
       const list = orders || [];
       const today = new Date().toDateString();
       const todayOrders = list.filter((o: any) => o.created_at && new Date(o.created_at).toDateString() === today);
