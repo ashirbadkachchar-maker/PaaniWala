@@ -43,7 +43,14 @@ export default function TrackOrder({ params }: { params: { oid: string } }) {
         setNotYours(true);
         return;
       }
-      setOrder(data);
+      // AUTO-FIX: Purane orders me delivery_otp nahi hai to random banao aur DB me save karo
+      let finalData = data;
+      if(!data.delivery_otp){
+        const newOtp = String(Math.floor(1000 + Math.random() * 9000));
+        await supabase.from("orders").update({ delivery_otp: newOtp }).eq("id", data.id);
+        finalData = { ...data, delivery_otp: newOtp };
+      }
+      setOrder(finalData);
       if (data.seller_id) {
         const { data: s } = await supabase
           .from("sellers")
@@ -97,7 +104,7 @@ export default function TrackOrder({ params }: { params: { oid: string } }) {
 
   const st = order.status || "Naya";
   const stepIdx = steps.indexOf(st);
-  const showDeliveryId = (st === "Raste Me Hai" || st === "Confirm") && order.delivery_otp;
+  const showDeliveryId = (st === "Raste Me Hai" || st === "Confirm" || st === "Naya") && order.delivery_otp;
 
   return (
     <>
