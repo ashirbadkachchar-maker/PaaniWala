@@ -134,9 +134,8 @@ export default function Checkout({ params }: { params: { pid: string } }) {
             ))}
           </div>
         </div>
-        <div className="flex items-center justify-between text-sm">
+        <span className="text-sm">B-2-304, Arihant Anchal, Jodhpur</span>
           <span>B-2-304, Arihant Anchal, Jodhpur</span>
-          <Link href="/address" className="text-blue-600 font-semibold">Badlo</Link>
         </div>
         <div className="border-2 border-gray-200 rounded-2xl p-4 text-sm space-y-1">
           <div className="flex justify-between"><span>{product.item_name}{product.item_type === "tanker"? "" : " x " + q}</span><span>Rs {price}</span></div>
