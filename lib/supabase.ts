@@ -1,18 +1,30 @@
 import { createClient } from "@supabase/supabase-js";
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+export const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
-export const supabase = createClient(url, key);
+// FIXED: No default mobile, no auto-login
+export const getMobile = (): string | null => {
+  if (typeof window === "undefined") return null;
+  const m = localStorage.getItem("pw_mobile");
+  if (!m || m === "9876543210") return null; // block demo number
+  return m;
+};
 
-// demo mobile jab tak asli login na ho
-export function getMobile() {
-  if (typeof window !== "undefined") {
-    return localStorage.getItem("pw_mobile") || "9876543210";
-  }
-  return "9876543210";
-}
+export const setMobile = (mobile: string) => {
+  if (typeof window === "undefined") return;
+  localStorage.setItem("pw_mobile", mobile.replace(/\D/g, "").slice(-10));
+};
 
-export function makeOrderId() {
-  return "PW-" + Math.floor(1000 + Math.random() * 9000);
-}
+export const clearMobile = () => {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem("pw_mobile");
+};
+
+export const makeOrderId = (): string => {
+  const rand = Math.random().toString(36).substring(2, 7).toUpperCase();
+  const time = Date.now().toString().slice(-5);
+  return `PW${time}${rand}`;
+};
