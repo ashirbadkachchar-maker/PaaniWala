@@ -48,7 +48,6 @@ export default function Checkout({ params }: { params: { pid: string } }) {
     return (<><Header /><main className="flex-1 p-4"><p className="text-gray-400">Load ho raha hai...</p></main><BottomNav /></>);
   }
 
-  // Single source - sab yahi se
   const q = product.item_type === "tanker"? 1 : qty;
   const unitWord = product.item_type === "camper"? "Camper" : "Bottle";
   const unitLabel = product.item_type === "camper"? " /can" : product.item_type === "tanker"? "" : " /bottle";
@@ -65,7 +64,6 @@ export default function Checkout({ params }: { params: { pid: string } }) {
     setSaving(true);
     const generatedPw = await ensureCustomerPassword(mobile);
     const orderId = makeOrderId();
-
     await supabase.from("orders").insert({
       order_id: orderId,
       mobile: mobile,
@@ -134,7 +132,7 @@ export default function Checkout({ params }: { params: { pid: string } }) {
             ))}
           </div>
         </div>
-        <span className="text-sm">B-2-304, Arihant Anchal, Jodhpur</span>
+        <div className="flex items-center justify-between text-sm">
           <span>B-2-304, Arihant Anchal, Jodhpur</span>
         </div>
         <div className="border-2 border-gray-200 rounded-2xl p-4 text-sm space-y-1">
