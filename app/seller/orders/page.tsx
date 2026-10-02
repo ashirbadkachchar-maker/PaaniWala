@@ -16,6 +16,16 @@ const badge: Record<string, string> = {
   "Cancel": "bg-red-100 text-red-500",
 };
 
+function maskMobile(m: string){
+  if(!m) return "";
+  const s = String(m).replace(/\D/g,"");
+  if(s.length < 10) return s.slice(0,2)+"******"+s.slice(-2);
+  return s.slice(0,2)+"******"+s.slice(-2);
+}
+function canReveal(status: string){
+  return status === "Pahuncha" || status === "Delivered" || status === "Complete";
+}
+
 export default function SellerOrders() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
@@ -42,33 +52,41 @@ export default function SellerOrders() {
   return (
     <>
       <Header />
-      <main className="flex-1 p-4 space-y-4">
+      <main className="flex-1 p-4 space-y-4 pb-24">
         <div className="flex justify-between items-center">
           <Link href="/seller/dashboard" className="text-blue-600 font-semibold text-sm">← Dashboard</Link>
           {newCount > 0 && <span className="text-xs font-extrabold text-white bg-red-500 rounded-full px-3 py-1">{newCount} naya</span>}
         </div>
         <h2 className="text-xl font-extrabold text-blue-900">Mere Orders</h2>
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">🔒 Buyer ka real number delivery tak hide rahega - commission safe</p>
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
           {tabs.map((t) => (
             <button key={t} onClick={() => setTab(t)} className={"whitespace-nowrap px-4 py-2 rounded-full font-bold text-sm " + (tab === t ? "gold-btn text-white" : "bg-gray-100 text-gray-500")}>{t}</button>
           ))}
         </div>
         <div className="space-y-3">
-          {filtered.map((o) => (
-            <Link key={o.id} href={"/seller/orders/" + o.id} className="gold-card rounded-2xl p-4 block">
-              <div className="flex justify-between items-start gap-2">
-                <div>
-                  <p className="font-bold text-blue-900">{o.item_name}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{o.mobile ? "+91 " + o.mobile + " • " : ""}{o.delivery_slot || ""}</p>
+          {filtered.map((o) => {
+            const revealed = canReveal(o.status || "Naya");
+            return (
+              <Link key={o.id} href={"/seller/orders/" + o.id} className="gold-card rounded-2xl p-4 block hover:shadow-md transition-shadow">
+                <div className="flex justify-between items-start gap-2">
+                  <div>
+                    <p className="font-bold text-blue-900">{o.item_name} x {o.qty || 1}</p>
+                    <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+                      <span className="font-bold">{revealed ? "+91 " + o.mobile : "+91 " + maskMobile(o.mobile)}</span>
+                      <span>• {o.delivery_slot || ""}</span>
+                    </p>
+                    {!revealed && <p className="text-[10px] text-amber-600 font-bold mt-0.5">Delivery ke baad pura number dikhega</p>}
+                  </div>
+                  <span className={"text-xs font-extrabold px-3 py-1 rounded-full " + (badge[o.status || "Naya"] || "bg-gray-100")}>{o.status || "Naya"}</span>
                 </div>
-                <span className={"text-xs font-extrabold px-3 py-1 rounded-full " + (badge[o.status || "Naya"] || "bg-gray-100")}>{o.status || "Naya"}</span>
-              </div>
-              <div className="flex justify-between items-center mt-2">
-                <span className="text-sm font-bold">Rs {o.price}</span>
-                <span className="text-blue-600 text-sm font-semibold">Detail →</span>
-              </div>
-            </Link>
-          ))}
+                <div className="flex justify-between items-center mt-2">
+                  <span className="text-sm font-bold">Rs {o.price}</span>
+                  <span className="text-blue-600 text-sm font-semibold">Detail →</span>
+                </div>
+              </Link>
+            );
+          })}
           {filtered.length === 0 && <p className="text-sm text-gray-400 text-center">Is list me koi order nahi</p>}
         </div>
       </main>
