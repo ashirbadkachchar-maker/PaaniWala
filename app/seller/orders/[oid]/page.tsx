@@ -38,12 +38,12 @@ export default function OrderDetail({ params }: { params: { oid: string } }) {
   const setStatus = async (st: string) => {
     if(st === "Pahuncha" && order?.status === "Raste Me Hai"){
       if(!otp || otp.length < 4){
-        setMsg("Buyer se 4-digit delivery OTP lo - Order ID ke last 4 digit");
+        setMsg("Buyer se 4-digit delivery OTP lo - sirf buyer ke app me dikhega");
         return;
       }
-      const expected = String(order.order_id).slice(-4);
+      const expected = String(order.delivery_otp || order.delivery_pin || "").trim(); // SECURE: Random OTP from DB, not order_id
       if(otp !== expected){
-        setMsg("Galat OTP! Sahi OTP hai: "+expected+" (Demo - Order ID last 4)");
+        setMsg("Galat OTP! Buyer se sahi OTP lo");
         return;
       }
     }
@@ -126,7 +126,7 @@ export default function OrderDetail({ params }: { params: { oid: string } }) {
               <input value={otp} onChange={e=>setOtp(e.target.value.replace(/\D/g,"").slice(0,4))} placeholder="1234" className="flex-1 border-2 border-gray-200 rounded-xl px-4 py-3 font-bold tracking-widest text-center outline-none focus:border-blue-900" inputMode="numeric"/>
             </div>
             {msg && <p className="text-xs font-bold text-amber-700 bg-amber-50 rounded-lg p-2">{msg}</p>}
-            <p className="text-[11px] text-gray-400">Demo OTP: {String(order.order_id).slice(-4)}</p>
+            <p className="text-[11px] text-red-500 font-bold">⚠️ OTP sirf buyer ke paas hai, seller dashboard pe nahi dikhega</p>
           </div>
         )}
 
