@@ -1,103 +1,171 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
+const getMapUrl = (lat: any, lng: any, address?: string) => {
+  if (lat && lng) return `https://www.google.com/maps?q=${lat},${lng}`;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address || "Jodhpur")}`;
+};
+
 export default function AdminSellers() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [sellers, setSellers] = useState<any[]>([]);
-  const [filter, setFilter] = useState("pending");
-
-  const load = async () => {
-    const { data } = await supabase.from("sellers").select("*").order("created_at", { ascending: false });
-    if (data) setSellers(data);
-  };
+  const [orders, setOrders] = useState<any[]>([]);
+  const [tab, setTab] = useState<"pending" | "approved" | "all">("pending");
+  const [search, setSearch] = useState("");
+  const [editingCommission, setEditingCommission] = useState<string | null>(null);
+  const [newRate, setNewRate] = useState("");
 
   useEffect(() => {
-    if (!localStorage.getItem("pw_admin")) { router.push("/admin/login"); return; }
+    const auth = localStorage.getItem("pw_admin") || localStorage.getItem("pw_admin_token");
+    if (!auth) { router.push("/admin/login"); return; }
     setReady(true);
     load();
   }, [router]);
 
-  const updateStatus = async (id: string, status: string) => {
-    await supabase.from("sellers").update({ status }).eq("id", id);
-    load();
+  const load = async () => {
+    const { data: s } = await supabase.from("sellers").select("*").order("created_at", { ascending: false });
+    const { data: o } = await supabase.from("orders").select("seller_id,price,commission,status").limit(1000);
+    if (s) setSellers(s);
+    if (o) setOrders(o);
   };
 
-  const updateCommission = async (id: string, rate: string) => {
-    const r = parseInt(rate);
-    if (!r || r < 0 || r > 50) return;
-    await supabase.from("sellers").update({ commission_rate: r }).eq("id", id);
+  const sellerStats = useMemo(() => {
+    const map: Record<string, any> = {};
+    sellers.forEach(s => map[s.id] = { totalOrders: 0, totalSell: 0, commission: 0, delivered: 0, pending: 0, cancel: 0 });
+    orders.forEach(o => {
+      if (!map[o.seller_id]) return;
+      map[o.seller_id].totalOrders += 1;
+      map[o.seller_id].totalSell += Number(o.price) || 0;
+      map[o.seller_id].commission += Number(o.commission) || 0;
+      if (o.status === "Pahuncha") map[o.seller_id].delivered += 1;
+      else if (o.status === "Cancel") map[o.seller_id].cancel += 1;
+      else map[o.seller_id].pending += 1;
+    });
+    return map;
+  }, [sellers, orders]);
+
+  const filtered = sellers.filter(s => {
+    if (tab === "pending" && s.status === "approved") return false;
+    if (tab === "approved" && s.status !== "approved") return false;
+    if (search) {
+      const q = search.toLowerCase();
+      return s.business_name?.toLowerCase().includes(q) || s.mobile?.includes(q) || s.area?.toLowerCase().includes(q);
+    }
+    return true;
+  });
+
+  const approve = async (id: string) => {
+    await supabase.from("sellers").update({ status: "approved" }).eq("id", id);
+    load();
+  };
+  const reject = async (id: string) => {
+    if (!confirm("Reject karna hai?")) return;
+    await supabase.from("sellers").update({ status: "rejected" }).eq("id", id);
+    load();
+  };
+  const toggleBlock = async (s: any) => {
+    const newStatus = s.status === "approved" ? "blocked" : "approved";
+    await supabase.from("sellers").update({ status: newStatus }).eq("id", s.id);
+    load();
+  };
+  const updateCommission = async (id: string) => {
+    const rate = Number(newRate);
+    if (isNaN(rate) || rate < 0 || rate > 50) { alert("0-50% tak rate dalo"); return; }
+    await supabase.from("sellers").update({ commission_rate: rate }).eq("id", id);
+    setEditingCommission(null);
+    setNewRate("");
     load();
   };
 
   if (!ready) return <main className="flex-1 p-6"><p className="text-center text-gray-400">Loading...</p></main>;
 
-  const filtered = filter === "all"? sellers : sellers.filter((s) => (filter === "pending"? s.status!== "approved" : s.status === "approved"));
+  const pendingCount = sellers.filter(s => s.status !== "approved" && s.status !== "blocked").length;
 
   return (
     <>
       <Header />
-      <main className="flex-1 p-4 space-y-4">
-        <Link href="/admin/dashboard" className="text-blue-600 font-semibold text-sm">← Dashboard</Link>
-        <h2 className="text-xl font-extrabold text-blue-900">Sellers Manage Karo</h2>
-
-        <div className="flex gap-2">
-          <button onClick={() => setFilter("pending")} className={"px-4 py-2 rounded-full font-bold text-sm " + (filter === "pending"? "gold-btn text-white" : "bg-gray-100 text-gray-500")}>
-            Pending ({sellers.filter((s) => s.status!== "approved").length})
-          </button>
-          <button onClick={() => setFilter("approved")} className={"px-4 py-2 rounded-full font-bold text-sm " + (filter === "approved"? "gold-btn text-white" : "bg-gray-100 text-gray-500")}>
-            Approved
-          </button>
-          <button onClick={() => setFilter("all")} className={"px-4 py-2 rounded-full font-bold text-sm " + (filter === "all"? "gold-btn text-white" : "bg-gray-100 text-gray-500")}>
-            Sab
-          </button>
+      <main className="flex-1 p-3 space-y-3 pb-24 max-w-5xl mx-auto w-full">
+        <div className="flex justify-between items-center">
+          <Link href="/admin/dashboard" className="text-blue-600 font-semibold text-sm">← Dashboard</Link>
+          <h2 className="font-extrabold text-blue-900">Sellers - GPS Control</h2>
+          <span className="text-xs bg-red-100 text-red-600 font-bold px-2 py-1 rounded-full">{pendingCount} pending</span>
         </div>
 
-        <div className="space-y-3">
-          {filtered.map((s) => (
-            <div key={s.id} className="gold-card rounded-2xl p-4 space-y-2">
-              <div className="flex justify-between items-start gap-2">
-                <div>
-                  <p className="font-extrabold text-blue-900">{s.business_name}</p>
-                  <p className="text-sm text-gray-500">{s.owner_name} • +91 {s.mobile}</p>
-                  <p className="text-xs text-gray-400">{s.area} {s.address? "• " + s.address : ""}</p>
-                  {s.lat && s.lng && (
-                    <a href={"https://maps.google.com/?q=" + s.lat + "," + s.lng} target="_blank" className="text-xs text-blue-600 font-semibold">📍 Map par dekho</a>
-                  )}
-                </div>
-                <span className={"text-xs font-bold px-3 py-1 rounded-full " + (s.status === "approved"? "bg-green-100 text-green-700" : "bg-red-100 text-red-600")}>
-                  {s.status || "pending"}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-gray-500">Commission:</span>
-                <span className="font-bold text-blue-900">{s.commission_rate || 5}%</span>
-                <input
-                  className="w-16 border-2 border-amber-200 rounded-lg px-2 py-1 text-center font-bold text-sm"
-                  placeholder="5"
-                  defaultValue={s.commission_rate || 5}
-                  onBlur={(e) => updateCommission(s.id, e.target.value)}
-                />
-                <span className="text-xs text-gray-400">%</span>
-              </div>
-
-              {s.status!== "approved"? (
-                <div className="flex gap-2">
-                  <button onClick={() => updateStatus(s.id, "approved")} className="flex-1 bg-green-600 text-white font-bold py-2.5 rounded-xl">✓ Approve Karo</button>
-                  <button onClick={() => updateStatus(s.id, "rejected")} className="flex-1 border-2 border-red-200 text-red-500 font-bold py-2.5 rounded-xl">✗ Reject</button>
-                </div>
-              ) : (
-                <button onClick={() => updateStatus(s.id, "pending")} className="w-full border-2 border-gray-200 text-gray-500 font-bold py-2 rounded-xl text-sm">Wapas Pending Karo</button>
-              )}
-            </div>
+        {/* Tabs */}
+        <div className="flex gap-2">
+          {[
+            { id: "pending", label: `Pending (${sellers.filter(s=>s.status!=="approved").length})` },
+            { id: "approved", label: `Approved (${sellers.filter(s=>s.status==="approved").length})` },
+            { id: "all", label: `All (${sellers.length})` },
+          ].map(t => (
+            <button key={t.id} onClick={() => setTab(t.id as any)} className={`flex-1 py-2.5 rounded-xl font-bold text-sm ${tab===t.id ? "gold-btn text-white" : "bg-gray-100 text-gray-600"}`}>{t.label}</button>
           ))}
-          {filtered.length === 0 && <p className="text-sm text-gray-400 text-center">Koi seller nahi hai</p>}
+        </div>
+
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Business name / mobile / area search..." className="w-full border-2 border-amber-100 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-blue-900" />
+
+        <div className="space-y-3">
+          {filtered.map(s => {
+            const st = sellerStats[s.id] || { totalOrders:0, totalSell:0, commission:0, delivered:0, pending:0, cancel:0 };
+            return (
+              <div key={s.id} className={`gold-card rounded-2xl p-4 space-y-3 ${s.status !== "approved" ? "border-2 border-red-200 bg-red-50/30" : ""}`}>
+                <div className="flex justify-between items-start gap-2">
+                  <div className="flex-1">
+                    <p className="font-extrabold text-blue-900 text-[16px]">{s.business_name}</p>
+                    <p className="text-xs text-gray-600">{s.area} {s.address ? `- ${s.address}` : ""}</p>
+                    <p className="text-xs mt-1">📱 +91 {s.mobile} | ⭐ {Number(s.rating || 4.5).toFixed(1)} | Commission: {s.commission_rate || 5}%</p>
+                    {s.lat && s.lng ? (
+                      <p className="text-xs font-bold text-green-700 mt-1">📍 GPS: {Number(s.lat).toFixed(5)}, {Number(s.lng).toFixed(5)} - Verified</p>
+                    ) : (
+                      <p className="text-xs font-bold text-red-500 mt-1">⚠️ GPS location missing</p>
+                    )}
+                    <div className="grid grid-cols-4 gap-2 mt-2 bg-white rounded-xl p-2 text-center">
+                      <div><p className="font-extrabold text-blue-900 text-sm">{st.totalOrders}</p><p className="text-[9px] text-gray-400">TOTAL</p></div>
+                      <div><p className="font-extrabold text-green-600 text-sm">{st.delivered}</p><p className="text-[9px] text-gray-400">DELIVERED</p></div>
+                      <div><p className="font-extrabold text-amber-600 text-sm">{st.pending}</p><p className="text-[9px] text-gray-400">PENDING</p></div>
+                      <div><p className="font-extrabold text-red-500 text-sm">{st.cancel}</p><p className="text-[9px] text-gray-400">CANCEL</p></div>
+                    </div>
+                    <p className="text-xs mt-1">Sell: <b>Rs {st.totalSell}</b> | Your Commission: <b className="text-green-600">Rs {st.commission}</b></p>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-1 rounded-full whitespace-nowrap ${s.status==="approved" ? "bg-green-100 text-green-700" : s.status==="blocked" ? "bg-gray-800 text-white" : "bg-red-100 text-red-600"}`}>{s.status?.toUpperCase()}</span>
+                </div>
+
+                {/* Commission Edit */}
+                {editingCommission === s.id ? (
+                  <div className="flex gap-2 bg-blue-50 rounded-xl p-2">
+                    <input value={newRate} onChange={e => setNewRate(e.target.value)} placeholder="5" type="number" className="flex-1 border rounded-lg px-3 py-1.5 text-sm" />
+                    <button onClick={() => updateCommission(s.id)} className="bg-green-600 text-white font-bold px-4 py-1.5 rounded-lg text-xs">Save</button>
+                    <button onClick={() => setEditingCommission(null)} className="bg-gray-200 font-bold px-3 py-1.5 rounded-lg text-xs">Cancel</button>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {s.status !== "approved" ? (
+                      <>
+                        <a href={getMapUrl(s.lat, s.lng, s.address)} target="_blank" className="flex-1 min-w-[100px] bg-blue-900 text-white text-center font-bold py-2.5 rounded-xl text-xs">📍 Map Verify</a>
+                        <button onClick={() => approve(s.id)} className="flex-1 min-w-[100px] bg-green-600 text-white font-bold py-2.5 rounded-xl text-xs">✓ Approve</button>
+                        <button onClick={() => reject(s.id)} className="flex-1 min-w-[80px] border-2 border-red-200 text-red-500 font-bold py-2.5 rounded-xl text-xs">✗ Reject</button>
+                      </>
+                    ) : (
+                      <>
+                        <a href={getMapUrl(s.lat, s.lng, s.address)} target="_blank" className="bg-blue-50 text-blue-700 font-bold px-3 py-2 rounded-xl text-xs">📍 Map</a>
+                        <a href={`tel:+91${s.mobile}`} className="bg-green-50 text-green-700 font-bold px-3 py-2 rounded-xl text-xs">📞 Call</a>
+                        <button onClick={() => { setEditingCommission(s.id); setNewRate(String(s.commission_rate || 5)); }} className="bg-amber-50 text-amber-700 font-bold px-3 py-2 rounded-xl text-xs">Edit {s.commission_rate || 5}%</button>
+                        <button onClick={() => toggleBlock(s)} className="bg-red-50 text-red-600 font-bold px-3 py-2 rounded-xl text-xs">Block</button>
+                        <Link href={`/shop/${s.id}`} className="bg-gray-100 text-gray-700 font-bold px-3 py-2 rounded-xl text-xs">Shop Dekho</Link>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {filtered.length === 0 && <p className="text-center text-gray-400 text-sm py-10">Koi seller nahi mila</p>}
         </div>
       </main>
       <BottomNav />
