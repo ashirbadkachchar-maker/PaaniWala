@@ -28,19 +28,12 @@ export default function Checkout({ params }: { params: { pid: string } }) {
     })();
   }, [params.pid]);
 
-  /* Naya customer - 4-digit password banao (profiles table me) */
   const ensureCustomerPassword = async (mobile: string) => {
     if (!mobile) return null;
-    const { data: existing } = await supabase
-     .from("profiles").select("id,password").eq("mobile", mobile).maybeSingle();
+    const { data: existing } = await supabase.from("profiles").select("id,password").eq("mobile", mobile).maybeSingle();
     if (!existing) {
       const pw = String(Math.floor(1000 + Math.random() * 9000));
-      await supabase.from("profiles").insert({
-        mobile: mobile,
-        password: pw,
-        name: "Customer",
-        address: "B-2-304, Arihant Anchal, Jodhpur",
-      });
+      await supabase.from("profiles").insert({ mobile, password: pw, name: "Customer", address: "B-2-304, Arihant Anchal, Jodhpur" });
       return pw;
     }
     if (!existing.password) {
@@ -51,6 +44,18 @@ export default function Checkout({ params }: { params: { pid: string } }) {
     return null;
   };
 
+  if (!product) {
+    return (<><Header /><main className="flex-1 p-4"><p className="text-gray-400">Load ho raha hai...</p></main><BottomNav /></>);
+  }
+
+  // Single source - sab yahi se
+  const q = product.item_type === "tanker"? 1 : qty;
+  const unitWord = product.item_type === "camper"? "Camper" : "Bottle";
+  const unitLabel = product.item_type === "camper"? " /can" : product.item_type === "tanker"? "" : " /bottle";
+  const price = product.price * q;
+  const rate = seller? seller.commission_rate || 5 : 5;
+  const commission = Math.round((price * rate) / 100);
+
   const placeOrder = async () => {
     const mobile = getMobile();
     if (!mobile) {
@@ -58,39 +63,29 @@ export default function Checkout({ params }: { params: { pid: string } }) {
       return;
     }
     setSaving(true);
-
     const generatedPw = await ensureCustomerPassword(mobile);
-
-        const orderId = makeOrderId();
-    const finalQty = product.item_type === "tanker" ? 1 : qty;
-    const finalPrice = product.price * finalQty;
-    const rate = seller ? seller.commission_rate || 5 : 5;
-    const finalCommission = Math.round((finalPrice * rate) / 100);
+    const orderId = makeOrderId();
 
     await supabase.from("orders").insert({
       order_id: orderId,
       mobile: mobile,
       seller_id: product.seller_id,
       item_type: product.item_type,
-      item_name: (product.item_type === "tanker" ? "" : finalQty + " x ") + product.item_name,
-      qty: finalQty,
-      price: finalPrice,
+      item_name: (product.item_type === "tanker"? "" : q + " x ") + product.item_name,
+      qty: q,
+      price: price,
       discount: 0,
-      total: finalPrice,
-      commission: finalCommission,
-      seller_earning: finalPrice - finalCommission,
+      total: price,
+      commission: commission,
+      seller_earning: price - commission,
       delivery_slot: time,
       address: "B-2-304, Arihant Anchal, Jodhpur",
       status: "Raste Me Hai",
     });
     localStorage.setItem("pw_last_order", orderId);
     setSaving(false);
-
-    if (generatedPw) {
-      setNewPassword(generatedPw);
-    } else {
-      router.push("/success");
-    }
+    if (generatedPw) setNewPassword(generatedPw);
+    else router.push("/success");
   };
 
   if (newPassword) {
@@ -103,31 +98,15 @@ export default function Checkout({ params }: { params: { pid: string } }) {
           <div className="gold-card rounded-2xl p-5 w-full space-y-2">
             <p className="text-sm text-gray-500">Aapka login password ban gaya hai:</p>
             <p className="text-5xl font-extrabold text-blue-900 tracking-widest">{newPassword}</p>
-            <p className="text-xs text-gray-500">
-              Mobile: {getMobile()}<br />
-              Agli baar isi mobile + password se login karke seedha order karo
-            </p>
+            <p className="text-xs text-gray-500">Mobile: {getMobile()}<br/>Agli baar isi mobile + password se login karo</p>
           </div>
           <p className="text-sm font-bold text-red-500">Iska screenshot le lo - dobara nahi dikhega!</p>
-          <button onClick={() => router.push("/success")} className="gold-btn w-full text-white text-lg font-bold py-3 rounded-2xl">
-            Note Kar Liya - Aage Badho
-          </button>
+          <button onClick={() => router.push("/success")} className="gold-btn w-full text-white text-lg font-bold py-3 rounded-2xl">Note Kar Liya - Aage Badho</button>
         </main>
         <BottomNav />
       </>
     );
   }
-
-  if (!product) {
-    return (<><Header /><main className="flex-1 p-4"><p className="text-gray-400">Load ho raha hai...</p></main><BottomNav /></>);
-  }
-
-  const q = product.item_type === "tanker"? 1 : qty;
-  const unitWord = product.item_type === "camper"? "Camper" : "Bottle";
-  const unitLabel = product.item_type === "camper"? " /can" : product.item_type === "tanker"? "" : " /bottle";
-  const price = product.price * q;
-  const rate = seller? seller.commission_rate || 5 : 5;
-  const commission = Math.round((price * rate) / 100);
 
   return (
     <>
@@ -162,9 +141,7 @@ export default function Checkout({ params }: { params: { pid: string } }) {
         <div className="border-2 border-gray-200 rounded-2xl p-4 text-sm space-y-1">
           <div className="flex justify-between"><span>{product.item_name}{product.item_type === "tanker"? "" : " x " + q}</span><span>Rs {price}</span></div>
           <div className="flex justify-between"><span>Delivery</span><span className="text-green-600 font-semibold">FREE</span></div>
-          <div className="flex justify-between font-extrabold text-blue-900 text-base pt-1 border-t">
-            <span>Kul</span><span>Rs {price}</span>
-          </div>
+          <div className="flex justify-between font-extrabold text-blue-900 text-base pt-1 border-t"><span>Kul</span><span>Rs {price}</span></div>
           <p className="text-xs text-gray-400 pt-1">Isme platform service charge ({rate}%) shamil hai</p>
         </div>
         <button onClick={placeOrder} disabled={saving} className="gold-btn w-full text-white text-lg font-bold py-3 rounded-2xl disabled:opacity-60">
