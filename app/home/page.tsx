@@ -1,4 +1,5 @@
 "use client";
+import { useEffect } from "react";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import Link from "next/link";
@@ -58,20 +59,28 @@ const items = [
 ];
 
 export default function Home() {
+  // FIX: Agar kabhi galat demo number 9876543210 save hua hai to usko hatao - auto-login band
+  useEffect(() => {
+    const m = localStorage.getItem("pw_mobile");
+    if (m === "9876543210" || m === "0000000000") {
+      localStorage.removeItem("pw_mobile");
+    }
+  }, []);
+
   return (
     <>
       <Header />
-      <main className="flex-1 p-4 space-y-4">
+      <main className="flex-1 p-4 space-y-4 pb-24">
         <div>
           <h2 className="text-2xl font-extrabold text-blue-900">Ghar Ghar Shuddh Paani</h2>
-          <p className="text-sm text-gray-500">Product chuno - nazdeeki seller se order karo, login baad me</p>
+          <p className="text-sm text-gray-500">Bina login ke product dekho - login sirf order karte time</p>
         </div>
         <div className="grid grid-cols-2 gap-3">
           {items.map((p) => (
             <Link
               key={p.type}
               href={"/sellers?type=" + p.type}
-              className="gold-card rounded-2xl p-4 flex flex-col items-center text-center gap-2"
+              className="gold-card rounded-2xl p-4 flex flex-col items-center text-center gap-2 active:scale-95 transition-transform"
             >
               {p.icon}
               <span className="font-extrabold text-blue-900">{p.name}</span>
