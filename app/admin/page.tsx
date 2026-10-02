@@ -1,47 +1,43 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import Header from "@/components/Header";
+import BottomNav from "@/components/BottomNav";
 
 export default function AdminLogin() {
   const router = useRouter();
-  const [id, setId] = useState("");
-  const [pw, setPw] = useState("");
+  const [pass, setPass] = useState("");
   const [err, setErr] = useState("");
 
   const login = () => {
-    if (id === "admin" && pw === "admin123") {
+    if (pass === "admin123") {
       localStorage.setItem("pw_admin", "1");
       router.push("/admin/dashboard");
     } else {
-      setErr("Galat ID ya password");
+      setErr("Galat password - admin123 dalo");
     }
   };
 
   return (
-    <main className="flex-1 flex flex-col items-center justify-center p-6 space-y-4 bg-blue-950">
-      <Image src="/pagdi.png" alt="logo" width={80} height={80} className="object-contain" />
-      <h2 className="text-2xl font-extrabold text-white">Admin Login</h2>
-      <div className="w-full space-y-3">
+    <>
+      <Header />
+      <main className="flex-1 p-6 space-y-4">
+        <h2 className="text-xl font-extrabold text-blue-900">Admin Login</h2>
+        <p className="text-sm text-gray-500">Sirf tere liye - sellers approve karne ke liye</p>
         <input
           className="input-gold"
-          placeholder="Admin ID"
-          value={id}
-          onChange={(e) => setId(e.target.value)}
-        />
-        <input
-          className="input-gold"
-          placeholder="Password"
           type="password"
-          value={pw}
-          onChange={(e) => setPw(e.target.value)}
+          placeholder="Password: admin123"
+          value={pass}
+          onChange={(e) => setPass(e.target.value)}
         />
-      </div>
-      {err && <p className="text-red-400 text-sm font-semibold">{err}</p>}
-      <button onClick={login} className="gold-btn w-full text-white text-lg font-bold py-3 rounded-2xl">
-        Login Karo
-      </button>
-      <p className="text-amber-200/60 text-xs">Demo: admin / admin123</p>
-    </main>
+        {err && <p className="text-red-500 text-sm font-semibold text-center">{err}</p>}
+        <button onClick={login} className="gold-btn w-full text-white text-lg font-bold py-3 rounded-2xl">
+          Admin Login
+        </button>
+        <p className="text-xs text-gray-400 text-center">Password abhi admin123 hai, baad me Supabase se change kar dena</p>
+      </main>
+      <BottomNav />
+    </>
   );
 }
