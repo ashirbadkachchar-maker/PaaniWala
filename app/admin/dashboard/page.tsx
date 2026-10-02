@@ -16,7 +16,7 @@ const getMapUrl = (lat: any, lng: any, address?: string) => {
 export default function AdminDashboard() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
-  const [tab, setTab] = useState<"overview" | "approvals" | "sellers" | "orders" | "commission">("overview");
+  const [tab, setTab] = useState<"overview" | "approvals" | "sellers" | "orders" | "commission" | "support">("overview");
   
   // Filters
   const [dateFrom, setDateFrom] = useState("");
@@ -210,15 +210,19 @@ export default function AdminDashboard() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
           {[
             { id: "overview", label: `Overview` },
+            { id: "support", label: `🎧 Support` },
             { id: "approvals", label: `Approvals (${stats.pending})` },
-            { id: "sellers", label: `Sellers Control (${stats.total})` },
+            { id: "sellers", label: `Sellers (${stats.total})` },
             { id: "orders", label: `Orders (${stats.totalOrders})` },
             { id: "commission", label: `Commission` },
           ].map(t => (
-            <button key={t.id} onClick={() => setTab(t.id as any)} className={`whitespace-nowrap px-4 py-2 rounded-full font-bold text-sm ${tab === t.id ? "gold-btn text-white" : "bg-gray-100 text-gray-600"}`}>
+            <button key={t.id} onClick={() => {
+              if (t.id === "support") { router.push("/admin/support"); return; }
+              setTab(t.id as any);
+            }} className={`whitespace-nowrap px-4 py-2 rounded-full font-bold text-sm ${tab === t.id ? "gold-btn text-white" : t.id==="support" ? "bg-red-500 text-white animate-pulse" : "bg-gray-100 text-gray-600"}`}>
               {t.label}
             </button>
           ))}
@@ -233,6 +237,22 @@ export default function AdminDashboard() {
                 <button onClick={() => setTab("approvals")} className="text-blue-600 font-bold text-sm mt-1">Abhi approve karo →</button>
               </div>
             )}
+
+            {/* SUPPORT CTA - NEW */}
+            <Link href="/admin/support" className="block bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl p-4 text-white shadow-lg">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="font-extrabold text-lg">🎧 Customer Support Center</p>
+                  <p className="text-xs opacity-90 mt-1">Complaint aayi? Mobile / Order ID dalke turant help karo</p>
+                  <div className="flex gap-2 mt-2">
+                    <span className="bg-white/20 text-[10px] font-bold px-2 py-1 rounded-full">{stats.cancelled} cancel</span>
+                    <span className="bg-white/20 text-[10px] font-bold px-2 py-1 rounded-full">{stats.pendingOrders} pending</span>
+                  </div>
+                </div>
+                <div className="text-3xl">→</div>
+              </div>
+            </Link>
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div className="gold-card rounded-2xl p-4 text-center">
                 <p className="text-2xl font-extrabold text-blue-900">{stats.total}</p>
@@ -253,6 +273,29 @@ export default function AdminDashboard() {
                 <p className="text-xs text-gray-500">Total Commission</p>
                 <p className="text-[10px] text-amber-600 font-bold">Today: Rs {stats.todayEarning}</p>
               </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Link href="/admin/support" className="gold-card rounded-2xl p-4 text-center bg-red-50 border-red-200">
+                <p className="text-2xl">🎧</p>
+                <p className="font-bold text-red-600 text-sm">Support</p>
+                <p className="text-[10px] text-gray-500">Complaint Help</p>
+              </Link>
+              <Link href="/admin/sellers" className="gold-card rounded-2xl p-4 text-center">
+                <p className="text-2xl">🏪</p>
+                <p className="font-bold text-blue-900 text-sm">Sellers</p>
+                <p className="text-[10px] text-gray-500">GPS Control</p>
+              </Link>
+              <Link href="/admin/orders" className="gold-card rounded-2xl p-4 text-center">
+                <p className="text-2xl">📦</p>
+                <p className="font-bold text-blue-900 text-sm">Orders</p>
+                <p className="text-[10px] text-gray-500">Full Control</p>
+              </Link>
+              <Link href="/admin/commission" className="gold-card rounded-2xl p-4 text-center">
+                <p className="text-2xl">💰</p>
+                <p className="font-bold text-blue-900 text-sm">Commission</p>
+                <p className="text-[10px] text-gray-500">PDF Report</p>
+              </Link>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
