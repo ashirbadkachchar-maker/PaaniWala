@@ -24,7 +24,6 @@ export default function TrackOrder({ params }: { params: { oid: string } }) {
   const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
-    // 1. Login check - bina login ke track nahi khulega
     const mobile = getMobile();
     if (!mobile) {
       router.replace("/login?next=" + encodeURIComponent("/track/" + params.oid));
@@ -33,7 +32,6 @@ export default function TrackOrder({ params }: { params: { oid: string } }) {
     setCheckingAuth(false);
 
     const load = async () => {
-      // 2. Sirf apna order dikhega - mobile + order_id dono match hona chahiye
       const { data } = await supabase
         .from("orders")
         .select("*")
@@ -41,13 +39,10 @@ export default function TrackOrder({ params }: { params: { oid: string } }) {
         .maybeSingle();
 
       if (!data) { setNotFound(true); return; }
-      
-      // 3. Security: Koi aur ka order nahi dekh sakta
       if (data.mobile !== mobile) {
         setNotYours(true);
         return;
       }
-
       setOrder(data);
       if (data.seller_id) {
         const { data: s } = await supabase
@@ -102,6 +97,7 @@ export default function TrackOrder({ params }: { params: { oid: string } }) {
 
   const st = order.status || "Naya";
   const stepIdx = steps.indexOf(st);
+  const showDeliveryId = (st === "Raste Me Hai" || st === "Confirm") && order.delivery_otp;
 
   return (
     <>
@@ -118,6 +114,26 @@ export default function TrackOrder({ params }: { params: { oid: string } }) {
           <p className="text-xs text-gray-500 mt-1">Order ID: {order.order_id}</p>
           <p className="text-xs text-gray-400">Mobile: +91 {order.mobile}</p>
         </div>
+
+        {showDeliveryId && (
+          <div className="bg-green-50 border-2 border-green-300 rounded-2xl p-5 text-center space-y-2 shadow-sm">
+            <p className="text-[11px] font-extrabold text-green-700 uppercase tracking-wider">✅ Delivery ID / OTP - Seller ko dikhao</p>
+            <p className="text-5xl font-extrabold tracking-[0.2em] text-blue-900">{order.delivery_otp}</p>
+            <p className="text-xs font-semibold text-gray-700">Seller jab paani leke aaye, tab ye 4-digit ID usko batana</p>
+            <div className="bg-white rounded-xl p-2 text-[11px] text-left space-y-1">
+              <p className="font-bold text-red-600">⚠️ Important:</p>
+              <p className="text-gray-600">• Ye Delivery ID sirf aapke paas hai, seller ko nahi dikhti</p>
+              <p className="text-gray-600">• Is ID ke bina seller fake delivery nahi kar payega</p>
+              <p className="text-gray-600">• Order ID = {order.order_id} se delivery nahi hogi, is Delivery ID se hogi</p>
+            </div>
+          </div>
+        )}
+
+        {st === "Pahuncha" && order.delivery_otp && (
+          <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-center">
+            <p className="text-sm font-bold text-green-700">✅ Delivery ho gayi - ID {order.delivery_otp} se verify hui</p>
+          </div>
+        )}
 
         {st !== "Cancel" ? (
           <div className="gold-card rounded-2xl p-4">
@@ -161,6 +177,8 @@ export default function TrackOrder({ params }: { params: { oid: string } }) {
           <div className="flex justify-between"><span className="text-gray-500 text-sm">Kul Price</span><span className="font-extrabold text-amber-600">Rs {order.price}</span></div>
           <div className="flex justify-between"><span className="text-gray-500 text-sm">Delivery</span><span className="font-bold text-blue-900 text-sm">{order.delivery_slot}</span></div>
           <div><span className="text-gray-500 text-sm">Address</span><p className="font-bold text-blue-900 text-sm">{order.address}</p></div>
+          <div className="flex justify-between border-t pt-2"><span className="text-gray-500 text-sm">Order ID</span><span className="font-bold text-sm">{order.order_id}</span></div>
+          {order.delivery_otp && <div className="flex justify-between"><span className="text-gray-500 text-sm">Delivery ID</span><span className="font-extrabold text-green-600 text-sm">{showDeliveryId ? order.delivery_otp : "•••• (Raste Me Hai pe dikhega)"}</span></div>}
         </div>
       </main>
       <BottomNav />
