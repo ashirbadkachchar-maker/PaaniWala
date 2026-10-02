@@ -1,40 +1,44 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
-import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { getMobile } from "@/lib/supabase";
 
 export default function Success() {
-  const [order, setOrder] = useState<any>(null);
+  const [orderId, setOrderId] = useState("");
+  const [mobile, setMobile] = useState("");
 
   useEffect(() => {
-    const oid = localStorage.getItem("pw_last_order");
-    if (!oid) return;
-    supabase.from("orders").select("*").eq("order_id", oid).single().then(({ data }) => {
-      if (data) setOrder(data);
-    });
+    setOrderId(localStorage.getItem("pw_last_order") || "");
+    setMobile(getMobile() || "");
   }, []);
 
   return (
     <>
       <Header />
-      <main className="flex-1 p-4 space-y-4 flex flex-col items-center justify-center text-center">
-        <div className="w-24 h-24 rounded-full gold-btn flex items-center justify-center text-5xl text-white">✓</div>
-        <h2 className="text-2xl font-extrabold text-blue-900">Order Mil Gaya!</h2>
-        <p className="text-gray-500">Dhanyavaad Ramesh Ji 🎉</p>
+      <main className="flex-1 p-6 flex flex-col items-center justify-center text-center space-y-4">
+        <div className="w-20 h-20 rounded-full bg-green-600 flex items-center justify-center text-4xl text-white">✓</div>
+        <h2 className="text-2xl font-extrabold text-blue-900">Order Successful!</h2>
+        <p className="text-sm text-gray-500">Paani wala raste me hai</p>
 
-        <div className="gold-card rounded-2xl p-4 w-full text-left text-sm space-y-1">
-          <div className="flex justify-between"><span>Order ID</span><span className="font-bold">{order ? order.order_id : "..."}</span></div>
-          <div className="flex justify-between"><span>Items</span><span>{order ? order.item_name : "..."}</span></div>
-          <div className="flex justify-between"><span>Delivery</span><span>{order ? order.delivery_slot : "..."}</span></div>
-          <div className="flex justify-between font-extrabold text-blue-900 pt-1 border-t">
-            <span>Kul Bhugtan</span><span>Rs {order ? order.total : "..."}</span>
-          </div>
+        <div className="gold-card rounded-2xl p-5 w-full space-y-2">
+          <p className="text-xs text-gray-500">Order ID</p>
+          <p className="font-extrabold text-blue-900 tracking-widest">{orderId || "PW-XXXX"}</p>
+          <p className="text-xs text-gray-500">Mobile: +91 {mobile}</p>
+          <p className="text-xs text-green-600 font-semibold mt-2">Seller ko notification chala gaya hai</p>
         </div>
 
-        <Link href="/track" className="gold-btn w-full text-white text-lg font-bold py-3 rounded-2xl">Track Karo</Link>
-        <Link href="/home" className="w-full border-2 border-blue-900 text-blue-900 font-bold py-3 rounded-2xl">Home Jao</Link>
+        <div className="w-full space-y-2 pt-2">
+          <Link href="/home" className="gold-btn block text-center text-white font-bold py-3 rounded-2xl">
+            Aur Order Karo
+          </Link>
+          <Link href="/orders" className="block text-center border-2 border-gray-200 rounded-2xl py-3 font-bold text-blue-900">
+            Mere Orders Dekho
+          </Link>
+        </div>
+
+        <p className="text-xs text-gray-400">Koi problem ho to seller ko call karo</p>
       </main>
       <BottomNav />
     </>
