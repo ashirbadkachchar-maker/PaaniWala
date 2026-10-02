@@ -11,7 +11,7 @@ export default function Splash() {
   }, [router]);
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
+    <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 min-h-screen">
       <div className="text-2xl">💧</div>
       <Image src="/pagdi.png" alt="PaaniWala logo" width={160} height={160} className="object-contain" />
       <h1 className="text-4xl font-extrabold text-blue-900">PaaniWala</h1>
