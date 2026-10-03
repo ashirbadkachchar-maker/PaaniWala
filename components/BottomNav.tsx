@@ -3,6 +3,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
+// 1. BINA LOGIN KE — sirf ye 3 dikhenge (tera purana wala)
+const publicTabs = [
+  { href: "/home", label: "Home", icon: "🏠", match: ["/", "/home"] },
+  { href: "/login", label: "Buyer", icon: "👤", match: ["/login"] },
+  { href: "/seller/login", label: "Seller", icon: "🏪", match: ["/seller/login", "/seller/register"] },
+];
+
+// 2. BUYER LOGIN KE BAAD
 const buyerTabs = [
   { href: "/home", label: "Home", icon: "🏠", match: ["/home", "/"] },
   { href: "/sellers", label: "Sellers", icon: "🏪", match: ["/sellers", "/shop"] },
@@ -10,6 +18,7 @@ const buyerTabs = [
   { href: "/profile", label: "Profile", icon: "👤", match: ["/profile"] },
 ];
 
+// 3. SELLER LOGIN KE BAAD
 const sellerTabs = [
   { href: "/seller/dashboard", label: "Dashboard", icon: "📊", match: ["/seller/dashboard"] },
   { href: "/seller/orders", label: "Orders", icon: "📦", match: ["/seller/orders"] },
@@ -24,38 +33,46 @@ const adminTabs = [
   { href: "/admin/commission", label: "Commission", icon: "💰", match: ["/admin/commission"] },
 ];
 
-// Jaha nav bilkul nahi dikhana
-const HIDE_ROUTES = ["/login", "/seller/login", "/seller/register", "/admin/login", "/admin/register"];
+const HIDE_ON = ["/login", "/seller/login", "/seller/register", "/admin/login"];
 
 export default function BottomNav(){
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
-  const [tabs, setTabs] = useState(buyerTabs);
+  const [tabs, setTabs] = useState(publicTabs);
 
   useEffect(()=>{
     setMounted(true);
-    if(pathname.startsWith("/admin")) setTabs(adminTabs);
-    else if(pathname.startsWith("/seller")) setTabs(sellerTabs);
-    else setTabs(buyerTabs);
+
+    // Login pages par nav bilkul mat dikhao - jump rokne ke liye
+    if(HIDE_ON.some(r => pathname === r || pathname.startsWith(r + "/"))){
+      return;
+    }
+
+    const buyer = localStorage.getItem("pw_mobile");
+    const seller = localStorage.getItem("pw_seller_id");
+    const admin = localStorage.getItem("pw_admin") || localStorage.getItem("pw_admin_token");
+
+    if(pathname.startsWith("/admin") && admin){
+      setTabs(adminTabs);
+    } else if(pathname.startsWith("/seller") && seller){
+      setTabs(sellerTabs);
+    } else if(seller){
+      // seller login hai to kahin bhi seller wala nav
+      setTabs(sellerTabs);
+    } else if(buyer){
+      // buyer login hai to buyer wala nav
+      setTabs(buyerTabs);
+    } else {
+      // koi login nahi — sirf Home | Buyer | Seller
+      setTabs(publicTabs);
+    }
   },[pathname]);
 
   if(!mounted) return null;
 
-  // FIX: Login/Register page par nav hide
-  if(HIDE_ROUTES.some(r => pathname === r || pathname.startsWith(r))){
+  // Login page par hide
+  if(HIDE_ON.some(r => pathname === r || pathname.startsWith(r + "/"))){
     return null;
-  }
-
-  // FIX: Seller bina login ke seller pages par ho to nav hide (login pe redirect hoga)
-  if(pathname.startsWith("/seller")){
-    const sid = localStorage.getItem("pw_seller_id");
-    if(!sid) return null;
-  }
-
-  // FIX: Admin bina login ke admin pages par ho to nav hide
-  if(pathname.startsWith("/admin")){
-    const admin = localStorage.getItem("pw_admin") || localStorage.getItem("pw_admin_token");
-    if(!admin) return null;
   }
 
   return (
