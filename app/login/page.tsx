@@ -1,55 +1,53 @@
 "use client";
-import { Suspense, useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
-function LoginForm() {
+function LoginForm(){
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextUrl = searchParams.get("next") || "/home";
-  const [mobile, setMobile] = useState("");
-  const [pin, setPin] = useState("");
-  const [err, setErr] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [mobile,setMobile]=useState("");
+  const [name,setName]=useState("");
+  const [permAddress,setPermAddress]=useState("");
+  const [loc,setLoc]=useState<{lat:number,lng:number}|null>(null);
+  const [locMsg,setLocMsg]=useState("");
 
-  const doLogin = async () => {
-    const clean = mobile.replace(/\D/g, "").slice(-10);
-    const cleanPin = pin.replace(/\D/g, "").slice(0, 6);
-    if (clean.length < 10) { setErr("Sahi mobile dalo"); return; }
-    if (cleanPin.length < 4) { setErr("4-digit PIN dalo"); return; }
-    setLoading(true);
-    const { data } = await supabase.from("profiles").select("id,password").eq("mobile", clean).maybeSingle();
-    setLoading(false);
-    if (!data) { setErr("Ye mobile registered nahi hai! Pehle Register karo."); return; }
-    if (data.password !== cleanPin) { setErr("Galat PIN!"); return; }
-    localStorage.setItem("pw_mobile", clean);
+  const getLocation=()=>{
+    setLocMsg("GPS le raha hoon...");
+    navigator.geolocation.getCurrentPosition(p=>{
+      setLoc({lat:p.coords.latitude,lng:p.coords.longitude});
+      setLocMsg(`GPS mil gaya: ${p.coords.latitude.toFixed(5)}, ${p.coords.longitude.toFixed(5)}`);
+    },()=>setLocMsg("Location allow karo"),{enableHighAccuracy:true, timeout:15000});
+  };
+
+  const doLogin=async()=>{
+    const clean=mobile.replace(/\D/g,"");
+    if(clean.length<10){alert("Mobile sahi dalo");return;}
+    if(!name.trim()||!permAddress.trim()){alert("Naam + Permanent Address dalo");return;}
+    if(!loc){alert("GPS lo - permanent ke liye zaruri hai");return;}
+    localStorage.setItem("pw_mobile",clean);
+    // Permanent address + GPS profile me FIXED rahega
+    let payload:any={mobile:clean, name:name.trim(), address:permAddress.trim(), lat:loc.lat, lng:loc.lng};
+    let {error}=await supabase.from("profiles").upsert(payload,{onConflict:"mobile"});
+    if(error && error.message.includes("column")){
+      const {lat,lng,...rest}=payload;
+      rest.address=`${payload.address} | GPS: ${loc.lat},${loc.lng}`;
+      await supabase.from("profiles").upsert(rest,{onConflict:"mobile"});
+    }
     router.push(nextUrl);
   };
 
-  return (
-    <main className="flex-1 p-5 space-y-5 bg-[#FFFBF2] min-h-screen pb-24">
-      <Link href="/home" className="text-blue-600 font-bold text-sm">← Home</Link>
-      <h2 className="text-2xl font-extrabold text-blue-900">Buyer Login</h2>
-      <div className="space-y-4 pt-2">
-        <div>
-          <label className="font-bold text-blue-900 text-sm">Mobile Number</label>
-          <div className="flex items-center gap-2 mt-1 border-2 border-amber-400 rounded-2xl px-4 py-3 bg-white">
-            <span className="font-extrabold text-blue-900 border-r-2 border-amber-300 pr-3">+91</span>
-            <input className="flex-1 outline-none font-bold text-blue-900" placeholder="98765 43210" value={mobile} onChange={e=>setMobile(e.target.value)} inputMode="numeric" />
-          </div>
-        </div>
-        <div>
-          <label className="font-bold text-blue-900 text-sm">4-Digit PIN</label>
-          <input className="w-full border-2 border-amber-400 rounded-2xl px-4 py-3 font-bold outline-none bg-white mt-1" type="password" placeholder="****" value={pin} onChange={e=>setPin(e.target.value)} inputMode="numeric" />
-        </div>
-        {err && <p className="text-red-600 text-sm font-bold text-center bg-red-50 rounded-xl py-2">{err}</p>}
-        <button onClick={doLogin} disabled={loading} className="w-full py-3.5 rounded-2xl text-white font-extrabold gold-btn">{loading?"Ruko...":"Login Karo"}</button>
-        <Link href={`/register?next=${encodeURIComponent(nextUrl)}`} className="block w-full border-2 border-blue-900 text-blue-900 font-bold py-3 rounded-2xl text-center">Puri Jankari ke Saath Register Karo →</Link>
-      </div>
+  return(
+    <main className="p-5 space-y-3">
+      <h2 className="text-xl font-extrabold text-blue-900">Naya Registration</h2>
+      <input className="w-full border-2 border-amber-300 rounded-xl px-3 py-3" placeholder="+91 Mobile" value={mobile} onChange={e=>setMobile(e.target.value)} />
+      <input className="w-full border-2 border-amber-300 rounded-xl px-3 py-3" placeholder="Naam - permanent" value={name} onChange={e=>setName(e.target.value)} />
+      <textarea className="w-full border-2 border-amber-300 rounded-xl px-3 py-3 h-20" placeholder="Permanent Address - ye fixed rahega profile me" value={permAddress} onChange={e=>setPermAddress(e.target.value)} />
+      <div className="bg-gray-50 p-3 rounded-xl border"><p className="text-xs">{locMsg||"GPS lo"}</p>
+      <button onClick={getLocation} className="w-full bg-blue-900 text-white py-2 rounded-xl mt-2 text-xs">{loc?"GPS Refresh":"📍 Permanent GPS Lo"}</button></div>
+      <button onClick={doLogin} className="gold-btn w-full text-white py-3 rounded-2xl">Register / Login</button>
     </main>
-  );
+  )
 }
-export default function Login() {
-  return <Suspense><LoginForm /></Suspense>
-}
+export default function Login(){return <Suspense><LoginForm/></Suspense>}
