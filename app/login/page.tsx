@@ -30,11 +30,10 @@ export default function BuyerLogin() {
 
   return (
     <div className="min-h-screen bg-[#fffaf0]">
-      {/* HEADER - Seller jaisa */}
       <header className="bg-white px-4 py-3 flex justify-between items-center border-b border-amber-100">
         <div className="flex items-center gap-2">
           <span className="text-2xl">💧</span>
-          <span className="text-[22px] font-extrabold text-[#1e3a8a]">PaaniWala</span>
+          <span className="text- font-extrabold text-[#1e3a8a]">PaaniWala</span>
         </div>
         <Link href="/login" className="bg-gradient-to-r from-[#f6c33a] to-[#d98e28] text-white font-bold px-5 py-2 rounded-full text-sm">
           Login
@@ -42,19 +41,15 @@ export default function BuyerLogin() {
       </header>
 
       <main className="p-5 space-y-5 max-w-md mx-auto">
-        {/* BACK ARROW */}
-        <Link href="/home" className="text-[#2b5bd7] font-bold text-[15px] flex items-center gap-1">
+        <Link href="/home" className="text-[#2b5bd7] font-bold text- flex items-center gap-1">
           ← Home
         </Link>
 
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 border border-gray-200 flex items-center justify-center">❓</div>
-          <h1 className="text-[28px] font-extrabold text-[#1e3a8a]">Buyer Login</h1>
-        </div>
+        <h1 className="text- font-extrabold text-[#1e3a8a]">🛒 Buyer Login</h1>
 
         <div className="space-y-4 pt-2">
           <div>
-            <label className="font-bold text-[#1e3a8a] text-[15px]">Mobile Number</label>
+            <label className="font-bold text-[#1e3a8a] text-">Mobile Number</label>
             <div className="mt-2 flex items-center gap-3 border-2 border-[#e8a531] rounded-2xl px-4 py-4 bg-white">
               <span className="font-extrabold text-[#1e3a8a] border-r-2 border-[#f6c33a] pr-3">+91</span>
               <input value={mobile} onChange={e=>setMobile(e.target.value)} placeholder="98765 43210" inputMode="numeric" className="flex-1 outline-none font-bold text-gray-600 placeholder:text-gray-400" />
@@ -62,17 +57,17 @@ export default function BuyerLogin() {
           </div>
 
           <div>
-            <label className="font-bold text-[#1e3a8a] text-[15px]">Password</label>
+            <label className="font-bold text-[#1e3a8a] text-">Password</label>
             <input value={password} onChange={e=>setPassword(e.target.value)} placeholder="Register ke time wala password" type="password" className="mt-2 w-full border-2 border-[#e8a531] rounded-2xl px-4 py-4 outline-none font-medium placeholder:text-gray-400" />
           </div>
 
           {err && <p className="bg-red-50 border border-red-200 text-red-600 text-sm font-bold p-3 rounded-xl text-center">{err}</p>}
 
-          <button onClick={doLogin} disabled={loading} className="w-full bg-gradient-to-r from-[#f6c33a] to-[#d98e28] text-white font-extrabold text-[18px] py-4 rounded-2xl shadow">
+          <button onClick={doLogin} disabled={loading} className="w-full bg-gradient-to-r from-[#f6c33a] to-[#d98e28] text-white font-extrabold text- py-4 rounded-2xl shadow">
             {loading? "Ruko..." : "Buyer Login"}
           </button>
 
-          <p className="text-center text-gray-500 text-[14px]">
+          <p className="text-center text-gray-500 text-">
             Naye buyer? <Link href="/buyer/register" className="text-[#2b5bd7] font-extrabold">Register karo</Link>
           </p>
         </div>
