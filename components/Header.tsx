@@ -1,3 +1,4 @@
+
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -43,7 +44,7 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-amber-100 px-4 py-3 flex items-center justify-between">
       <Link href="/home" className="flex items-center gap-2">
-        <Image src="/pagdi.png" alt="PaaniWala" width={32} height={32} className="object-contain" />
+        <Image src="/paaniwala.png" alt="PaaniWala" width={32} height={32} className="object-contain" />
         <span className="text-xl font-extrabold text-blue-900 tracking-tight">PaaniWala</span>
       </Link>
 
