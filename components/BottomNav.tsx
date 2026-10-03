@@ -4,46 +4,44 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const buyerTabs = [
-  { href: "/home", label: "Home", icon: "🏠" },
-  { href: "/sellers", label: "Sellers", icon: "🏪" },
-  { href: "/orders", label: "Orders", icon: "📦" },
-  { href: "/profile", label: "Profile", icon: "👤" },
+  { href: "/home", label: "Home", icon: "🏠", match: ["/home", "/"] },
+  { href: "/sellers", label: "Sellers", icon: "🏪", match: ["/sellers", "/shop"] },
+  { href: "/orders", label: "Orders", icon: "📦", match: ["/orders", "/order"] },
+  { href: "/profile", label: "Profile", icon: "👤", match: ["/profile", "/login"] },
 ];
-
 const sellerTabs = [
-  { href: "/seller/dashboard", label: "Dashboard", icon: "📊" },
-  { href: "/seller/orders", label: "Orders", icon: "📦" },
-  { href: "/seller/products", label: "Products", icon: "🧴" },
-  { href: "/seller/profile", label: "Profile", icon: "👤" },
+  { href: "/seller/dashboard", label: "Dashboard", icon: "📊", match: ["/seller/dashboard"] },
+  { href: "/seller/orders", label: "Orders", icon: "📦", match: ["/seller/orders"] },
+  { href: "/seller/products", label: "Products", icon: "🧴", match: ["/seller/products"] },
+  { href: "/seller/profile", label: "Profile", icon: "👤", match: ["/seller/profile"] },
 ];
-
 const adminTabs = [
-  { href: "/admin", label: "Admin", icon: "🛡️" },
-  { href: "/admin/sellers", label: "Sellers", icon: "✅" },
-  { href: "/admin/orders", label: "Orders", icon: "📦" },
-  { href: "/admin/profile", label: "Profile", icon: "👤" },
+  { href: "/admin/dashboard", label: "Dashboard", icon: "🛡️", match: ["/admin/dashboard", "/admin"] },
+  { href: "/admin/sellers", label: "Sellers", icon: "✅", match: ["/admin/sellers"] },
+  { href: "/admin/orders", label: "Orders", icon: "📦", match: ["/admin/orders"] },
+  { href: "/admin/commission", label: "Commission", icon: "💰", match: ["/admin/commission"] },
 ];
 
 export default function BottomNav(){
   const pathname = usePathname();
-  const [role, setRole] = useState<"buyer"|"seller"|"admin">("buyer");
+  const [mounted, setMounted] = useState(false);
+  const [tabs, setTabs] = useState(buyerTabs);
 
   useEffect(()=>{
-    const isSeller = localStorage.getItem("pw_seller_id");
-    const isAdmin = localStorage.getItem("pw_admin_id") || localStorage.getItem("pw_admin");
-    if(isAdmin) setRole("admin");
-    else if(isSeller) setRole("seller");
-    else setRole("buyer");
+    setMounted(true);
+    if(pathname.startsWith("/admin")) setTabs(adminTabs);
+    else if(pathname.startsWith("/seller")) setTabs(sellerTabs);
+    else setTabs(buyerTabs);
   },[pathname]);
 
-  const tabs = role === "seller"? sellerTabs : role === "admin"? adminTabs : buyerTabs;
+  if(!mounted) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-amber-100 flex justify-around py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] z-50 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-amber-100 flex justify-around py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] z-50">
       {tabs.map(t=>{
-        const active = pathname === t.href || pathname.startsWith(t.href + "/");
+        const active = t.match.some(m => pathname === m || pathname.startsWith(m + "/"));
         return (
-          <Link key={t.href} href={t.href} className={`flex flex-col items-center gap-0.5 text- min-w- py-1 rounded-xl ${active? "text-blue-900 font-extrabold bg-amber-50" : "text-gray-400"}`}>
+          <Link key={t.href} href={t.href} className={`flex flex-col items-center gap-0.5 text-[11px] ${active? "text-blue-900 font-extrabold" : "text-gray-400"}`}>
             <span className="text-xl leading-none">{t.icon}</span>
             <span>{t.label}</span>
           </Link>
