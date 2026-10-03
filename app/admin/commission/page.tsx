@@ -19,7 +19,6 @@ export default function AdminCommission() {
     const auth = localStorage.getItem("pw_admin") || localStorage.getItem("pw_admin_token");
     if (!auth) { router.push("/admin/login"); return; }
     setReady(true);
-    // Auto set period
     const now = new Date();
     if (period === "today") {
       setDateFrom(now.toISOString().slice(0,10));
@@ -59,9 +58,7 @@ export default function AdminCommission() {
     const totalCommission = filtered.reduce((s,o) => s + (Number(o.commission)||0), 0);
     const totalOrders = filtered.length;
     const delivered = filtered.filter(o => o.status === "Pahuncha").length;
-    const avgOrder = totalOrders ? Math.round(totalSale/totalOrders) : 0;
-
-    // Seller wise
+    const avgOrder = totalOrders? Math.round(totalSale/totalOrders) : 0;
     const sellerMap: Record<string, any> = {};
     sellers.forEach(s => sellerMap[s.id] = { seller: s, orders:0, sale:0, commission:0 });
     filtered.forEach(o => {
@@ -71,27 +68,35 @@ export default function AdminCommission() {
       sellerMap[o.seller_id].commission += Number(o.commission)||0;
     });
     const sellerWise = Object.values(sellerMap).filter((x:any) => x.orders>0).sort((a:any,b:any) => b.commission - a.commission);
-
-    // Monthly breakdown
     const monthMap: Record<string, any> = {};
     filtered.forEach(o => {
-      const m = new Date(o.created_at).toISOString().slice(0,7); // YYYY-MM
+      const m = new Date(o.created_at).toISOString().slice(0,7);
       if (!monthMap[m]) monthMap[m] = { month: m, orders:0, sale:0, commission:0 };
       monthMap[m].orders +=1;
       monthMap[m].sale += Number(o.price)||0;
       monthMap[m].commission += Number(o.commission)||0;
     });
     const monthly = Object.values(monthMap).sort((a:any,b:any) => a.month.localeCompare(b.month));
-
     return { totalSale, totalCommission, totalOrders, delivered, avgOrder, sellerWise, monthly };
   }, [filtered, sellers]);
 
+  // FIXED - NO NPM IMPORT, CDN se
+  const loadScript = (src: string) => new Promise<void>((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+    const s = document.createElement("script");
+    s.src = src;
+    s.onload = () => resolve();
+    s.onerror = () => reject();
+    document.body.appendChild(s);
+  });
+
   const downloadPDF = async () => {
-    const fileNamePeriod = dateFrom && dateTo ? `${dateFrom}_to_${dateTo}` : period;
+    const fileNamePeriod = dateFrom && dateTo? `${dateFrom}_to_${dateTo}` : period;
     try {
-      const { jsPDF } = await import("jspdf");
+      await loadScript("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
+      await loadScript("https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js");
       // @ts-ignore
-      await import("jspdf-autotable");
+      const { jsPDF } = (window as any).jspdf;
       const doc = new jsPDF();
       doc.setFontSize(18);
       doc.setTextColor(30,58,138);
@@ -101,7 +106,6 @@ export default function AdminCommission() {
       doc.text(`Period: ${dateFrom||"Start"} to ${dateTo||"Today"} | Generated: ${new Date().toLocaleString("en-IN")}`, 14, 28);
       doc.text(`Total Orders: ${report.totalOrders} | Delivered: ${report.delivered} | Avg Order: Rs ${report.avgOrder}`, 14, 34);
       doc.text(`Total Sales: Rs ${report.totalSale} | Total Commission: Rs ${report.totalCommission} | Payout: Rs ${report.totalSale - report.totalCommission}`, 14, 40);
-
       // @ts-ignore
       doc.autoTable({
         startY: 45,
@@ -110,7 +114,6 @@ export default function AdminCommission() {
         headStyles: { fillColor: [30,58,138] },
         styles: { fontSize: 9 }
       });
-
       // @ts-ignore
       const finalY = doc.lastAutoTable.finalY + 10;
       doc.text("Monthly Breakdown:", 14, finalY);
@@ -122,19 +125,17 @@ export default function AdminCommission() {
         headStyles: { fillColor: [245,158,11] },
         styles: { fontSize: 9 }
       });
-
       doc.save(`PaaniWala-Commission-${fileNamePeriod}.pdf`);
     } catch {
-      // Fallback CSV
       const csv = [
         `PaaniWala Commission Report,${fileNamePeriod}`,
         `Total Orders,${report.totalOrders},Delivered,${report.delivered},Total Sale,${report.totalSale},Commission,${report.totalCommission}`,
         "",
         "Seller,Area,Orders,Sale,Commission",
-        ...(report.sellerWise as any[]).map((s:any) => `"${s.seller.business_name}","${s.seller.area||""}",${s.orders},${s.sale},${s.commission}`),
+       ...(report.sellerWise as any[]).map((s:any) => `"${s.seller.business_name}","${s.seller.area||""}",${s.orders},${s.sale},${s.commission}`),
         "",
         "Month,Orders,Sale,Commission",
-        ...(report.monthly as any[]).map((m:any) => `${m.month},${m.orders},${m.sale},${m.commission}`)
+       ...(report.monthly as any[]).map((m:any) => `${m.month},${m.orders},${m.sale},${m.commission}`)
       ].join("\n");
       const blob = new Blob([csv], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
@@ -156,33 +157,24 @@ export default function AdminCommission() {
           <h2 className="font-extrabold text-blue-900">Commission Report</h2>
           <button onClick={downloadPDF} className="gold-btn text-white text-xs font-bold px-3 py-1.5 rounded-xl">📄 PDF</button>
         </div>
-
         <div className="flex gap-2">
-          {[
-            { id: "today", label: "Today" },
-            { id: "week", label: "This Week" },
-            { id: "month", label: "This Month" },
-            { id: "all", label: "All Time" },
-          ].map(p => (
-            <button key={p.id} onClick={() => setPeriod(p.id as any)} className={`flex-1 py-2 rounded-xl text-xs font-bold ${period===p.id ? "gold-btn text-white" : "bg-gray-100"}`}>{p.label}</button>
+          {[{ id: "today", label: "Today" },{ id: "week", label: "This Week" },{ id: "month", label: "This Month" },{ id: "all", label: "All Time" }].map(p => (
+            <button key={p.id} onClick={() => setPeriod(p.id as any)} className={`flex-1 py-2 rounded-xl text-xs font-bold ${period===p.id? "gold-btn text-white" : "bg-gray-100"}`}>{p.label}</button>
           ))}
         </div>
-
         <div className="gold-card rounded-2xl p-3 flex gap-2">
           <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="flex-1 border rounded-xl px-2 py-2 text-xs" />
           <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="flex-1 border rounded-xl px-2 py-2 text-xs" />
         </div>
-
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="gold-card rounded-2xl p-3 text-center"><p className="text-xl font-extrabold text-blue-900">{report.totalOrders}</p><p className="text-xs text-gray-500">Total Orders</p><p className="text-[10px] text-green-600">{report.delivered} delivered</p></div>
           <div className="gold-card rounded-2xl p-3 text-center"><p className="text-xl font-extrabold text-amber-600">Rs {report.totalSale}</p><p className="text-xs text-gray-500">Total Sales</p></div>
           <div className="gold-card rounded-2xl p-3 text-center bg-green-50 border-green-200"><p className="text-xl font-extrabold text-green-600">Rs {report.totalCommission}</p><p className="text-xs text-gray-500">Your Commission</p></div>
           <div className="gold-card rounded-2xl p-3 text-center"><p className="text-xl font-extrabold text-blue-900">Rs {report.avgOrder}</p><p className="text-xs text-gray-500">Avg Order Value</p></div>
         </div>
-
         <div className="gold-card rounded-2xl p-4">
           <div className="flex justify-between items-center mb-2">
-            <h3 className="font-bold text-blue-900 text-sm">Seller Wise Commission (Time Sorted)</h3>
+            <h3 className="font-bold text-blue-900 text-sm">Seller Wise Commission</h3>
             <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-2 py-1 rounded-full">{dateFrom} to {dateTo || "Today"}</span>
           </div>
           <div className="overflow-x-auto">
@@ -199,10 +191,8 @@ export default function AdminCommission() {
                 ))}
               </tbody>
             </table>
-            {(report.sellerWise as any[]).length===0 && <p className="text-center text-gray-400 py-4 text-xs">No data for selected period</p>}
           </div>
         </div>
-
         <div className="gold-card rounded-2xl p-4">
           <h3 className="font-bold text-blue-900 text-sm mb-2">Monthly Breakdown</h3>
           <div className="space-y-2">
@@ -214,10 +204,8 @@ export default function AdminCommission() {
                 <span className="text-xs font-bold text-green-600">Rs {m.commission}</span>
               </div>
             ))}
-            {(report.monthly as any[]).length===0 && <p className="text-center text-gray-400 text-xs">No monthly data</p>}
           </div>
         </div>
-
         <button onClick={downloadPDF} className="gold-btn w-full text-white font-bold py-3 rounded-2xl">📄 Download Full PDF Report</button>
       </main>
       <BottomNav />
