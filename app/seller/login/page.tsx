@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import Link from "next/link";
-import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 
 export default function SellerLogin() {
@@ -16,15 +15,15 @@ export default function SellerLogin() {
 
   const doLogin = async () => {
     setErr("");
-    const clean = mobile.replace(/\D/g, "");
+    const clean = mobile.replace(/\D/g,"").slice(-10);
     if (clean.length < 10) { setErr("Sahi mobile number dalo"); return; }
     if (!password) { setErr("Password dalo"); return; }
     setLoading(true);
     const { data } = await supabase
-    .from("sellers")
-    .select("id,business_name,password,status")
-    .eq("mobile", clean)
-    .maybeSingle();
+   .from("sellers")
+   .select("id,business_name,password,status")
+   .eq("mobile", clean)
+   .maybeSingle();
     setLoading(false);
     if (!data) { setErr("Ye mobile registered nahi hai - pehle seller register karo"); return; }
     if (data.password!== password) { setErr("Galat password"); return; }
@@ -37,42 +36,48 @@ export default function SellerLogin() {
   return (
     <>
       <Header />
-      <main className="flex-1 p-5 space-y-4">
-        <Link href="/home" className="text-blue-600 font-semibold text-sm">← Home</Link>
-        <div className="flex items-center gap-2">
-          <Image src="/pagdi.png" alt="PaaniWala" width={40} height={40} className="object-contain" />
-          <span className="text-2xl font-extrabold text-blue-900">Seller Login</span>
-        </div>
-        <div>
-          <label className="font-semibold text-blue-900 text-sm">Mobile Number</label>
-          <div className="input-gold flex items-center gap-2 mt-1">
-            <span className="font-bold text-blue-900 border-r-2 border-amber-300 pr-2">+91</span>
+      <main className="flex-1 p-5 space-y-5 max-w-md mx-auto bg-[#fffaf0] min-h-screen">
+        <Link href="/home" className="text-[#2b5bd7] font-bold text- flex items-center gap-1">← Home</Link>
+
+        {/*? wala box hata diya, emoji add kiya */}
+        <h1 className="text- font-extrabold text-[#1e3a8a]">🏪 Seller Login</h1>
+
+        <div className="space-y-4 pt-2">
+          <div>
+            <label className="font-bold text-[#1e3a8a] text-">Mobile Number</label>
+            <div className="mt-2 flex items-center gap-3 border-2 border-[#e8a531] rounded-2xl px-4 py-4 bg-white">
+              <span className="font-extrabold text-[#1e3a8a] border-r-2 border-[#f6c33a] pr-3">+91</span>
+              <input
+                className="flex-1 outline-none font-bold text-gray-700 placeholder:text-gray-400"
+                placeholder="98765 43210"
+                value={mobile}
+                onChange={(e) => setMobile(e.target.value)}
+                inputMode="numeric"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="font-bold text-[#1e3a8a] text-">Password</label>
             <input
-              className="flex-1 outline-none font-bold text-blue-900"
-              placeholder="98765 43210"
-              value={mobile}
-              onChange={(e) => setMobile(e.target.value)}
-              inputMode="numeric"
+              className="mt-2 w-full border-2 border-[#e8a531] rounded-2xl px-4 py-4 outline-none font-medium placeholder:text-gray-400 bg-white"
+              type="password"
+              placeholder="Register ke time wala password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
             />
           </div>
+
+          {err && <p className="bg-red-50 border border-red-200 text-red-600 text-sm font-bold p-3 rounded-xl text-center">{err}</p>}
+
+          <button onClick={doLogin} disabled={loading} className="w-full bg-gradient-to-r from-[#f6c33a] to-[#d98e28] text-white font-extrabold text- py-4 rounded-2xl shadow disabled:opacity-60">
+            {loading? "Ruko..." : "Seller Login"}
+          </button>
+
+          <p className="text-center text-gray-500 text-">
+            Naye seller? <Link href="/seller/register" className="text-[#2b5bd7] font-extrabold">Register karo</Link>
+          </p>
         </div>
-        <div>
-          <label className="font-semibold text-blue-900 text-sm">Password</label>
-          <input
-            className="input-gold mt-1"
-            type="password"
-            placeholder="Register ke time wala password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-        {err && <p className="text-red-500 text-sm font-semibold text-center">{err}</p>}
-        <button onClick={doLogin} disabled={loading} className="gold-btn w-full text-white text-lg font-bold py-3 rounded-2xl disabled:opacity-60">
-          {loading? "Ruko..." : "Seller Login"}
-        </button>
-        <p className="text-center text-sm text-gray-500">
-          Naye seller? <Link href="/seller/register" className="text-blue-600 font-bold">Register karo</Link>
-        </p>
       </main>
       <BottomNav />
     </>
