@@ -1,6 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import "leaflet/dist/leaflet.css";
 
 body { background: #fff7ed; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
 .gold-frame { border: 3px solid #f59e0b; }
