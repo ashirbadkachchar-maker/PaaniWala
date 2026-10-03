@@ -7,20 +7,25 @@ const buyerTabs = [
   { href: "/home", label: "Home", icon: "🏠", match: ["/home", "/"] },
   { href: "/sellers", label: "Sellers", icon: "🏪", match: ["/sellers", "/shop"] },
   { href: "/orders", label: "Orders", icon: "📦", match: ["/orders", "/order"] },
-  { href: "/profile", label: "Profile", icon: "👤", match: ["/profile", "/login"] },
+  { href: "/profile", label: "Profile", icon: "👤", match: ["/profile"] },
 ];
+
 const sellerTabs = [
   { href: "/seller/dashboard", label: "Dashboard", icon: "📊", match: ["/seller/dashboard"] },
   { href: "/seller/orders", label: "Orders", icon: "📦", match: ["/seller/orders"] },
   { href: "/seller/products", label: "Products", icon: "🧴", match: ["/seller/products"] },
   { href: "/seller/profile", label: "Profile", icon: "👤", match: ["/seller/profile"] },
 ];
+
 const adminTabs = [
-  { href: "/admin/dashboard", label: "Dashboard", icon: "🛡️", match: ["/admin/dashboard", "/admin"] },
+  { href: "/admin/dashboard", label: "Dashboard", icon: "🛡️", match: ["/admin/dashboard"] },
   { href: "/admin/sellers", label: "Sellers", icon: "✅", match: ["/admin/sellers"] },
   { href: "/admin/orders", label: "Orders", icon: "📦", match: ["/admin/orders"] },
   { href: "/admin/commission", label: "Commission", icon: "💰", match: ["/admin/commission"] },
 ];
+
+// Jaha nav bilkul nahi dikhana
+const HIDE_ROUTES = ["/login", "/seller/login", "/seller/register", "/admin/login", "/admin/register"];
 
 export default function BottomNav(){
   const pathname = usePathname();
@@ -35,6 +40,23 @@ export default function BottomNav(){
   },[pathname]);
 
   if(!mounted) return null;
+
+  // FIX: Login/Register page par nav hide
+  if(HIDE_ROUTES.some(r => pathname === r || pathname.startsWith(r))){
+    return null;
+  }
+
+  // FIX: Seller bina login ke seller pages par ho to nav hide (login pe redirect hoga)
+  if(pathname.startsWith("/seller")){
+    const sid = localStorage.getItem("pw_seller_id");
+    if(!sid) return null;
+  }
+
+  // FIX: Admin bina login ke admin pages par ho to nav hide
+  if(pathname.startsWith("/admin")){
+    const admin = localStorage.getItem("pw_admin") || localStorage.getItem("pw_admin_token");
+    if(!admin) return null;
+  }
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-amber-100 flex justify-around py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] z-50">
